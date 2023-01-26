@@ -4,3 +4,7 @@ console.log(message);
 class Metric {
     
 }
+
+class LicenseMetric extends Metric {
+    
+}
