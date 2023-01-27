@@ -1,0 +1,12 @@
+{
+  "name": "example_request",
+  "author": "Priyanka Pereira",
+  "main": "build/example_request.js",
+  "scripts": {
+	  "build": "tsc",
+	  "run": "node build/example_request.js"
+  },
+  "dependencies": {
+    "octokit": "^2.0.14"
+  }
+}
