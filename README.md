@@ -44,7 +44,7 @@ scripts/initial_setup.sh
 ```
 source scripts/setup.sh
 ```
-Note that this script also sets the environment variable GITHUB_TOKEN.
+Note that this script sets the environment variable GITHUB_TOKEN.
 - Install Node.js with nvm - this is important so uninstall any existing node you have. We want to be able to switch which version of node we are running so we can work with eceprog! eceprog runs node version 12. nvm allows the switching to occur without reinstallation.
 
 ```
