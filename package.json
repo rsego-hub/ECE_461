@@ -2,7 +2,6 @@
   "name": "example_request",
   "author": "Priyanka Pereira",
   "main": "build/example_request.js",
-  "type": "module",
   "scripts": {
 	  "build": "tsc",
 	  "run": "node build/example_request.js"
