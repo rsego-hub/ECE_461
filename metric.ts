@@ -1,7 +1,6 @@
+import { Repository } from "./repository.js"
+
 /* Metric Class
- *
- * 
- *
  *
 */
 abstract class Metric {
