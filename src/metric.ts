@@ -16,8 +16,8 @@ export abstract class Metric {
 */
 export class LicenseMetric extends Metric {
     async get_metric(repo: Repository):Promise<number> {
-        var license: string = await repo.get_license();
-		console.log("XXXXXXXXXXXXXXXXXXXXXXXXXXXXX" + license);
+        const license: string = await repo.get_license();
+
         let regex = new RegExp("LGPL v2.1") // Very basic regex, can be expanded on in future
         if(regex.test(license)) {
             return 1

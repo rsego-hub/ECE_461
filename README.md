@@ -63,3 +63,12 @@ npm install octokit
 ```
 source scripts/setup.sh
 ```
+
+## Test environment setup
+- Install ts-jest with all dependencies (testing framework we can use)
+
+```
+npm install --save-dev jest typescript ts-jest @types/jest
+```
+
+

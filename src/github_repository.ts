@@ -15,12 +15,11 @@ export class GithubRepository extends Repository {
 	}
 	
 	async get_license():Promise<string> {
-		console.log("entering");
 		// uses octokit REST API to fetch README
 		const { data } = await this.octokit.rest.repos.getContent({
 		  owner: "octocat",
 		  repo: "hello-world",
-		  path: "README",
+		  path: "README.md",
 		});
 		console.log(data);
 		var title:string = "priyanka"
@@ -40,7 +39,6 @@ export class GithubRepository extends Repository {
 	
 	// temp get_issues from sample 
 	async get_issues():Promise<string> {
-		console.log("entering");
 		// uses octokit REST API to fetch README
 		const iterator = this.octokit.paginate.iterator(this.octokit.rest.issues.listForRepo, {
 		  owner: "octocat",
@@ -54,7 +52,6 @@ export class GithubRepository extends Repository {
 		   		console.log("Issue #%d: %s", issue.number, issue.title);
 				title = issue.title;
 		  	}
-		  	console.log("outer loop");
 		}
 		return new Promise((resolve) => {
 			resolve(title);
