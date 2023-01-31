@@ -1,27 +1,49 @@
 import { Octokit } from "octokit";
+import {
+  GetResponseTypeFromEndpointMethod,
+  GetResponseDataTypeFromEndpointMethod,
+} from "@octokit/types";
 import { Repository } from "./repository";
 // const Octokit = require("octokit");
-                                                                                             
+                                                                                        
  /* GithubRepository Class                                                                    
   *                                                                                           
  */                                                                                           
 export class GithubRepository extends Repository {
 	private octokit = new Octokit({
     	auth: process.env.GITHUB_TOKEN,
-	});
-
+	});                                
+     
 	constructor(owner: string, repo: string) {
 		super(owner, repo);
 	}
 	
 	async get_license():Promise<string> {
+		type ContentResponseType = GetResponseTypeFromEndpointMethod<
+		typeof this.octokit.rest.repos.getContent>;
+		type ContentResponseDataType = GetResponseDataTypeFromEndpointMethod<
+		typeof this.octokit.rest.repos.getContent>; 
+		
 		// uses octokit REST API to fetch README
-		const { data } = await this.octokit.rest.repos.getContent({
+		var content:ContentResponseType = await this.octokit.rest.repos.getContent({
 		  owner: "octocat",
 		  repo: "hello-world",
-		  path: "README.md",
+		  path: "README",
 		});
-		console.log(data);
+		
+		console.log(content);
+		console.log("********************************************");
+		var cdata:ContentResponseDataType = content.data;
+		console.log(cdata);
+		console.log("********************************************");
+		console.log(typeof(cdata));
+		
+		// this does not work for some reason - debug
+		// 	console.log(cdata.name)
+		// this is a workaround since we cannot seem to access object properties of cdata above
+		var jdata = JSON.parse(JSON.stringify(cdata));
+		console.log(jdata.name);
+		
 		var title:string = "priyanka"
 		// iterate through each response
 //		const readme_content:string = { data: content };
