@@ -12,6 +12,10 @@ export abstract class Repository {
 		this.owner = owner;
 		this.repo = repo;
 	}
+	// returns license file contents
     abstract get_license():Promise<string>;
     abstract get_issues():Promise<string>;
+    // returns file content of 
+    abstract get_file_content(pathname: string):Promise<string | null>;
+    abstract get_readme():Promise<string>;
 }

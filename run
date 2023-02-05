@@ -1,0 +1,30 @@
+#!/bin/bash
+if [[ "$1" == "install" ]]; then
+	echo "Installing nvm"
+	scripts/initial_setup.sh
+	echo "Installing nvm"
+	source scripts/setup.sh
+	nvm install node
+	npm install -g typescript --save-dev
+	npm install -g ts-node
+	npm install
+	
+elif [[ "$1" == "build" ]]; then
+	echo "BUILD"
+	source scripts/setup.sh
+	tsc
+
+elif [[ "$1" == "test" ]]; then
+	echo "TEST"
+	source scripts/setup.sh
+	npm run coverage
+
+elif [[ -z "$1" ]]; then
+	echo "No URL_FILE argument provided!"
+	exit 1
+
+else
+	echo "run with URL_FILE $1"
+	source scripts/setup.sh
+	ts-node src/index.ts $1
+fi
