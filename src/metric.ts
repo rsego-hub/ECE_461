@@ -38,8 +38,13 @@ export class ResponsiveMetric extends Metric {
 
         var title:string = "";
 		for await (const { data: issues } of iterator) {
-			for (const issue of issues) {
-                console.log("Issue #%d: %s", issue.listEvents);
+            // possibly instead this line since it works on a group of issues, rather than a single one
+            /* for (const event of issues.listEvents()) {
+            *      responsetime = new Date(event.time) - prevdate
+            *      prevdate = event.time
+            */
+			for(const issue of issues) {
+                console.log("Issue #%d: %s", issue.listEvents());
 				title = issue.title;
             }
 		}
