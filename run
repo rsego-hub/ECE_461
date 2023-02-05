@@ -2,20 +2,24 @@
 if [[ "$1" == "install" ]]; then
 	echo "Installing nvm"
 	scripts/initial_setup.sh
-	echo "Installing nvm"
+	echo "Checking for environment vars and setting up nvm dirs"
 	source scripts/setup.sh
+	echo "Installing node"
 	nvm install node
+	echo "Installing typescript"
 	npm install -g typescript --save-dev
+	echo "Installing ts-node"
 	npm install -g ts-node
+	echo "Installing all package.json dependencies"
 	npm install
 	
 elif [[ "$1" == "build" ]]; then
-	echo "BUILD"
+	echo "Building project"
 	source scripts/setup.sh
 	tsc
 
 elif [[ "$1" == "test" ]]; then
-	echo "TEST"
+	echo "Testing with jest"
 	source scripts/setup.sh
 	npm run coverage
 
@@ -24,7 +28,7 @@ elif [[ -z "$1" ]]; then
 	exit 1
 
 else
-	echo "run with URL_FILE $1"
+	echo "Running with URL_FILE $1"
 	source scripts/setup.sh
-	ts-node src/index.ts $1
+	node build/src/index.js $1
 fi

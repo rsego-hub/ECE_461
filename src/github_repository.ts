@@ -28,12 +28,12 @@ export class GithubRepository extends Repository {
 		});
 		try {
 		  const {filePath,downloadStatus} = await downloader.download(); //Downloader.download() resolves with some useful properties.
-		    console.log("All done" + filePath);	
+		    logger.log('debug', "All done" + filePath);	
 		    return filePath;
 		} catch (error) {
 		  //IMPORTANT: Handle a possible error. An error is thrown in case of network errors, or status codes of 400 and above.
 		  //Note that if the maxAttempts is set to higher than 1, the error is thrown only if all attempts fail.
-		  console.log("Download failed", error);
+		  logger.log('debug', "Download failed", error);
 		}
 		return null;
 	}
@@ -46,15 +46,24 @@ export class GithubRepository extends Repository {
 		type ContentResponseDataType = GetResponseDataTypeFromEndpointMethod<
 		typeof this.octokit.rest.repos.getContent>; 
 		
-		// uses octokit REST API to fetch README
-		var content:ContentResponseType = await this.octokit.rest.repos.getContent({
-		  owner: this.owner,
-		  repo: this.repo,
-		  path: pathname,
-		});
+		var cdata:ContentResponseDataType;
+		var rv:string|null = null;
+		// uses octokit REST API to fetch file content
+		try {
+			var content:ContentResponseType = await this.octokit.rest.repos.getContent({
+			  owner: this.owner,
+			  repo: this.repo,
+			  path: pathname,
+			});
+			logger.log('info', "Fetched file " + pathname + " from " + this.owner + "/" + this.repo);
+			cdata = content.data;
+		} catch (error) {
+			logger.log('debug', "Could not fetch file " + pathname + " from " + this.owner + "/" + this.repo);
+			return new Promise((resolve) => {
+				resolve(rv);
+			});	
+		}
 		
-		var cdata:ContentResponseDataType = content.data;
-
 		// this does not work for some reason - debug
 		// this is a workaround since we cannot seem to access object properties of cdata above
 		var jdata = JSON.parse(JSON.stringify(cdata));
@@ -78,7 +87,7 @@ export class GithubRepository extends Repository {
 		var title:string = "";
 		for await (const { data: issues } of iterator) {
 			for (const issue of issues) {
-		   		console.log("Issue #%d: %s", issue.number, issue.title);
+		   		logger.log('debug', "Issue #%d: %s", issue.number, issue.title);
 				title = issue.title;
 		  	}
 		}
@@ -93,7 +102,7 @@ export class GithubRepository extends Repository {
 		type ContentResponseDataType = GetResponseDataTypeFromEndpointMethod<
 		typeof this.octokit.rest.licenses.getForRepo>; 
 		
-		// uses octokit REST API to fetch README
+		// uses octokit REST API to fetch license data
 		var content:ContentResponseType = await this.octokit.rest.licenses.getForRepo({
 		  owner: this.owner,
 		  repo: this.repo,
@@ -102,10 +111,10 @@ export class GithubRepository extends Repository {
 		var cdata:ContentResponseDataType = content.data;
 
 		// this does not work for some reason - debug
-		// 	console.log(cdata.name)
+		// 	logger.log('debug', cdata.name)
 		// this is a workaround since we cannot seem to access object properties of cdata above
 		var jdata = JSON.parse(JSON.stringify(cdata));
-		console.log(jdata);
+		logger.log('debug', jdata);
 		
 		return new Promise((resolve) => {
 			resolve("");

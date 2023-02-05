@@ -2,4 +2,4 @@
 
 rm -rf ~/.npm
 rm -rf ~/.nvm
-rm -rf build coverage node_modules
+rm -rf build coverage node_modules logs downloads
