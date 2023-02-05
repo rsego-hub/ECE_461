@@ -1,4 +1,5 @@
 import { Repository } from "./repository"
+import { Octokit, App } from "octokit";
 
 /* Metric Class
  * Abstract class to be extendedd for all current and future metric subclass
@@ -10,7 +11,7 @@ export abstract class Metric {
     abstract get_metric(repo: Repository):Promise<number>;
 }
 
-/* License Class
+/* License Metric Class
  * Finds compatibility of repository license with GNU Lesser General Public License v2.1
  *
 */
@@ -22,6 +23,27 @@ export class LicenseMetric extends Metric {
         if(regex.test(license)) {
             return 1
         }
+        return 0
+    }
+}
+
+/* Responsive Maintenance Metric Class
+ * Get average amount of time before an issue or bug is resolved
+ *
+*/
+export class ResponsiveMetric extends Metric {
+    async get_metric(repo: Repository):Promise<number> {
+
+        const iterator = await repo.get_issues() // get all issues
+
+        var title:string = "";
+		for await (const { data: issues } of iterator) {
+			for (const issue of issues) {
+                console.log("Issue #%d: %s", issue.listEvents);
+				title = issue.title;
+            }
+		}
+
         return 0
     }
 }
