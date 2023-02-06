@@ -48,7 +48,7 @@ export class ResponsiveMetric extends Metric {
 
             // for each event in the list
             for await (const event of event_iter) {
-                tot_response_time += new Date(event.time).getTime() - prevdate; // increase response_time
+                tot_response_time += new Date(event.time).getTime() - prevdate; // add time since last event to total response time
                 prevdate = event.time;
                 num_events += 1;
             }
