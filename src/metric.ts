@@ -1,5 +1,4 @@
 import { Repository } from "./repository"
-import { Octokit, App } from "octokit";
 
 /* Metric Class
  * Abstract class to be extendedd for all current and future metric subclass
