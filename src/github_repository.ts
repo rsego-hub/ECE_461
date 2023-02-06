@@ -6,7 +6,6 @@ import {
 import Downloader from "nodejs-file-downloader";
 
 import { Repository } from "./repository";
-// const Octokit = require("octokit");
                                                                                         
  /* GithubRepository Class                                                                    
   *                                                                                           
@@ -20,10 +19,10 @@ export class GithubRepository extends Repository {
 		super(owner, repo);
 	}
 	
+	
 	private async download_file_content(url:string):Promise<string | null> {
-  		// Wrapping the code with an async function, just for the sake of example.
 		const downloader = new Downloader({
-		  url: url, //If the file name already exists, a new file with the name 200MB1.zip is created.
+		  url: url, 
 		  directory: "./downloads/" + this.repo, //This folder will be created, if it doesn't exist.
 		});
 		try {
@@ -75,58 +74,120 @@ export class GithubRepository extends Repository {
 		});		
 	}
 	
-	// temp get_issues from sample 
+	// @ROBERT I am still working on this - will finish asap
 	async get_issues():Promise<string> {
-		// uses octokit REST API to fetch README
-		const iterator = this.octokit.paginate.iterator(this.octokit.rest.issues.listForRepo, {
-		  owner: "octocat",
-		  repo: "hello-world",
+		type IteratorResponseType = GetResponseTypeFromEndpointMethod<
+		typeof this.octokit.paginate.iterator>;
+		type IteratorResponseDataType = GetResponseDataTypeFromEndpointMethod<
+		typeof this.octokit.paginate.iterator>; 
+		
+		type ContentResponseType = GetResponseTypeFromEndpointMethod<
+		typeof this.octokit.rest.issues.listForRepo>;
+		type ContentResponseDataType = GetResponseDataTypeFromEndpointMethod<
+		typeof this.octokit.rest.issues.listForRepo>; 
+		
+		var cdata:IteratorResponseDataType;
+		var rv:string|null = null;
+		// uses octokit REST API to fetch issues list
+		const iterator:IteratorResponseType = this.octokit.paginate.iterator(this.octokit.rest.issues.listForRepo, {
+		  owner: this.owner,
+		  repo: this.repo,
 		  per_page: 100,
 		});
 		// iterate through each response
 		var title:string = "";
+		var content:ContentResponseDataType;
 		for await (const { data: issues } of iterator) {
 			for (const issue of issues) {
-		   		logger.log('debug', "Issue #%d: %s", issue.number, issue.title);
+		   		console.log('debug', "Issue #%d: %s", issue.number, issue.title, );
 				title = issue.title;
 		  	}
 		}
+	
+//		// uses octokit REST API to fetch issues list
+//		const iterator = this.octokit.paginate.iterator(this.octokit.rest.issues.listForRepo, {
+//		  owner: "octocat",
+//		  repo: "hello-world",
+//		  per_page: 100,
+//		});
+//		// iterate through each response
+//		var title:string = "";
+//		for await (const { data: issues } of iterator) {
+//			for (const issue of issues) {
+//		   		logger.log('debug', "Issue #%d: %s", issue.number, issue.title);
+//				title = issue.title;
+//		  	}
+//		}
 		return new Promise((resolve) => {
 			resolve(title);
 		});
 	} 
 
-	async get_license():Promise<string> {
+	async get_license():Promise<string | null> {
 		type ContentResponseType = GetResponseTypeFromEndpointMethod<
 		typeof this.octokit.rest.licenses.getForRepo>;
 		type ContentResponseDataType = GetResponseDataTypeFromEndpointMethod<
 		typeof this.octokit.rest.licenses.getForRepo>; 
-		
-		// uses octokit REST API to fetch license data
-		var content:ContentResponseType = await this.octokit.rest.licenses.getForRepo({
-		  owner: this.owner,
-		  repo: this.repo,
-		});
-		
-		var cdata:ContentResponseDataType = content.data;
+		var cdata:ContentResponseDataType;
+		var rv:string|null = null;
 
-		// this does not work for some reason - debug
-		// 	logger.log('debug', cdata.name)
+		// uses octokit REST API to fetch license data
+		try {
+			var content:ContentResponseType = await this.octokit.rest.licenses.getForRepo({
+			  owner: this.owner,
+			  repo: this.repo,
+			});
+			cdata = content.data;
+			logger.log('info', "Fetched license file from " + this.owner + "/" + this.repo);
+		} catch (error) {
+			logger.log('debug', "Could not fetch license file from " + this.owner + "/" + this.repo);
+			return new Promise((resolve) => {
+				resolve(rv);
+			});	
+		}
+
 		// this is a workaround since we cannot seem to access object properties of cdata above
-		var jdata = JSON.parse(JSON.stringify(cdata));
-		logger.log('debug', jdata);
-		
+		var jdata = JSON.parse(JSON.stringify(cdata));		
 		return new Promise((resolve) => {
-			resolve("");
+			resolve(jdata.license.spdx_id);
 		});
 	}   
 	
-	async get_readme():Promise<string> {
+	async get_readme():Promise<string | null> {
+		type ContentResponseType = GetResponseTypeFromEndpointMethod<
+		typeof this.octokit.rest.repos.getReadme>;
+		type ContentResponseDataType = GetResponseDataTypeFromEndpointMethod<
+		typeof this.octokit.rest.repos.getReadme>; 
+		var cdata:ContentResponseDataType;
+		var rv:string|null = null;
+
+		// uses octokit REST API to fetch license data
+		try {
+			var content:ContentResponseType = await this.octokit.rest.repos.getReadme({
+			  owner: this.owner,
+			  repo: this.repo,
+			});
+			cdata = content.data;
+			logger.log('info', "Fetched license file from " + this.owner + "/" + this.repo);
+		} catch (error) {
+			logger.log('debug', "Could not fetch license file from " + this.owner + "/" + this.repo);
+			return new Promise((resolve) => {
+				resolve(rv);
+			});	
+		}
+
+		// this does not work for some reason - debug
+		// this is a workaround since we cannot seem to access object properties of cdata above
+		var jdata = JSON.parse(JSON.stringify(cdata));
+		var download_url:string = jdata.download_url;
+		const downloaded_file:string|null = await this.download_file_content(download_url);		
+		
 		return new Promise((resolve) => {
-			resolve("");
-		});
+			resolve(downloaded_file);
+		});	
 	}     
 	
+	// @ANDY Will finish this ASAP!
 	async get_contributors_stats():Promise<string> {
 		return new Promise((resolve) => {
 			resolve("");

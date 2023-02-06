@@ -16,12 +16,7 @@ export abstract class Metric {
 */
 export class LicenseMetric extends Metric {
     async get_metric(repo: Repository):Promise<number> {
-		// priyanka remove the following line, now just for testing
-		//const lfile: string|null = await repo.get_license();
-		//console.log(lfile);
-		// end removal section
-		
-        const license: string|null = await repo.get_file_content("README");
+        const license: string|null = await repo.get_file_content("README.md");
 		if (license != null) {
 	        let regex = new RegExp("LGPL v2.1"); // Very basic regex, can be expanded on in future
 	        if(regex.test(license)) {

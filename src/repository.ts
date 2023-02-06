@@ -8,14 +8,36 @@
 export abstract class Repository {
 	owner: string;
 	repo: string;
+	// @PRIYANKA: change constructor to take in string url as 
+	// parameter and set member variables owner, repo, and
+	// type (npm/git) based on URL parsing
 	constructor(owner: string, repo: string) {
 		this.owner = owner;
 		this.repo = repo;
 	}
-	// returns license file contents
-    abstract get_license():Promise<string>;
+	
+	/* get_license() function
+		returns license file spdx_id as string or null
+		a valid spdx-id will be lgpl-2.1 or MIT
+		make sure to error check for null string return.
+		Some repositories don't have a license file!!
+		Should also call get_readme and regex for license
+		MIT and LGPL in the readme in the license metric.
+	*/
+    abstract get_license():Promise<string | null>;
     abstract get_issues():Promise<string>;
-    // returns file content of 
+	/* get_file_content() function
+		input argument is name of requested file in the source repo
+		returns absolute filepath of downloaded requested file in this project
+		make sure to error check for null string return.
+	*/
     abstract get_file_content(pathname: string):Promise<string | null>;
-    abstract get_readme():Promise<string>;
+	/* get_readme() function
+		returns absolute filepath of downloaded readme in this project
+		make sure to error check for null string return.
+		Some will download readme as txt files, but if readme.md in
+		the source, the downloaded file will be in markdown.
+		Suggest the use of a markdown parsing library
+	*/
+    abstract get_readme():Promise<string | null>;
 }
