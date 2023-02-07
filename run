@@ -1,0 +1,34 @@
+#!/bin/bash
+if [[ "$1" == "install" ]]; then
+	echo "Installing nvm"
+	scripts/initial_setup.sh
+	echo "Checking for environment vars and setting up nvm dirs"
+	source scripts/setup.sh
+	echo "Installing node"
+	nvm install node
+	echo "Installing typescript"
+	npm install -g typescript --save-dev
+	echo "Installing ts-node"
+	npm install -g ts-node
+	echo "Installing all package.json dependencies"
+	npm install
+	
+elif [[ "$1" == "build" ]]; then
+	echo "Building project"
+	source scripts/setup.sh
+	tsc
+
+elif [[ "$1" == "test" ]]; then
+	echo "Testing with jest"
+	source scripts/setup.sh
+	npm run coverage
+
+elif [[ -z "$1" ]]; then
+	echo "No URL_FILE argument provided!"
+	exit 1
+
+else
+	echo "Running with URL_FILE $1"
+	source scripts/setup.sh
+	node build/src/index.js $1
+fi
