@@ -7,9 +7,21 @@ import Downloader from "nodejs-file-downloader";
 
 import { Repository } from "./repository";
                                                                                         
- /* GithubRepository Class                                                                    
-  *                                                                                           
- */                                                                                           
+ /* GithubRepository Class
+ */
+export class Issue {
+	created_at:string|null;
+	updated_at:string|null;
+	closed_at:string|null;
+	total_events:number|null;
+	constructor(created_at: string|null, updated_at: string|null, closed_at: string|null, total_events: number|null) {
+		this.created_at = created_at;
+		this.updated_at = updated_at;
+		this.closed_at = closed_at;
+		this.total_events = total_events;
+	}
+}
+
 export class GithubRepository extends Repository {
 	private octokit = new Octokit({
     	auth: process.env.GITHUB_TOKEN,
@@ -19,7 +31,8 @@ export class GithubRepository extends Repository {
 		super(owner, repo);
 	}
 	
-	
+	// took from example code in nodejs-file-downloader
+	// https://www.npmjs.com/package/nodejs-file-downloader?activeTab=readme#basic
 	private async download_file_content(url:string):Promise<string | null> {
 		const downloader = new Downloader({
 		  url: url, 
@@ -75,7 +88,7 @@ export class GithubRepository extends Repository {
 	}
 	
 	// @ROBERT I am still working on this - will finish asap
-	async get_issues():Promise<string> {
+	async get_issues():Promise<Issue[]> {
 		type IteratorResponseType = GetResponseTypeFromEndpointMethod<
 		typeof this.octokit.paginate.iterator>;
 		type IteratorResponseDataType = GetResponseDataTypeFromEndpointMethod<
@@ -86,40 +99,38 @@ export class GithubRepository extends Repository {
 		type ContentResponseDataType = GetResponseDataTypeFromEndpointMethod<
 		typeof this.octokit.rest.issues.listForRepo>; 
 		
-		var cdata:IteratorResponseDataType;
-		var rv:string|null = null;
+		type EventsResponseType = GetResponseTypeFromEndpointMethod<
+		typeof this.octokit.rest.issues.listEvents>;
+		type EventsResponseDataType = GetResponseDataTypeFromEndpointMethod<
+		typeof this.octokit.rest.issues.listEvents>;
+
+		var rv:Issue[] = [];
 		// uses octokit REST API to fetch issues list
 		const iterator:IteratorResponseType = this.octokit.paginate.iterator(this.octokit.rest.issues.listForRepo, {
 		  owner: this.owner,
 		  repo: this.repo,
 		  per_page: 100,
 		});
-		// iterate through each response
-		var title:string = "";
-		var content:ContentResponseDataType;
+		// iterate through each response and error check null response
+		// MUST ERROR CHECK HERE @PRIYANKA
 		for await (const { data: issues } of iterator) {
 			for (const issue of issues) {
-		   		console.log('debug', "Issue #%d: %s", issue.number, issue.title, );
-				title = issue.title;
+				// console.log(issue);
+				var eventcontent:EventsResponseType = await this.octokit.rest.issues.listEvents({
+					owner: this.owner,
+					repo: this.repo,
+					issue_number: issue.number
+				});
+				var eventcdata:EventsResponseDataType = eventcontent.data;
+				console.log(eventcdata.length)
+				var curr_issue = new Issue(issue.created_at, issue.updated_at, issue.closed_at, eventcdata.length);
+				rv.push(curr_issue);
+				logger.log('info', "Owner: %s, Repo: %s, Issue #%d: %s", this.owner, this.repo, issue.number, issue.title, );
 		  	}
 		}
 	
-//		// uses octokit REST API to fetch issues list
-//		const iterator = this.octokit.paginate.iterator(this.octokit.rest.issues.listForRepo, {
-//		  owner: "octocat",
-//		  repo: "hello-world",
-//		  per_page: 100,
-//		});
-//		// iterate through each response
-//		var title:string = "";
-//		for await (const { data: issues } of iterator) {
-//			for (const issue of issues) {
-//		   		logger.log('debug', "Issue #%d: %s", issue.number, issue.title);
-//				title = issue.title;
-//		  	}
-//		}
 		return new Promise((resolve) => {
-			resolve(title);
+			resolve(rv);
 		});
 	} 
 
@@ -189,6 +200,32 @@ export class GithubRepository extends Repository {
 	
 	// @ANDY Will finish this ASAP!
 	async get_contributors_stats():Promise<string> {
+		type IteratorResponseType = GetResponseTypeFromEndpointMethod<
+		typeof this.octokit.paginate.iterator>;
+		type IteratorResponseDataType = GetResponseDataTypeFromEndpointMethod<
+		typeof this.octokit.paginate.iterator>;
+
+		type ContentResponseType = GetResponseTypeFromEndpointMethod<
+		typeof this.octokit.rest.issues.listForRepo>;
+		type ContentResponseDataType = GetResponseDataTypeFromEndpointMethod<
+		typeof this.octokit.rest.issues.listForRepo>;
+
+		var rv:Issue[] = [];
+		// uses octokit REST API to fetch issues list
+		const iterator:IteratorResponseType = this.octokit.paginate.iterator(this.octokit.rest.issues.listForRepo, {
+		  owner: this.owner,
+		  repo: this.repo,
+		  per_page: 100,
+		});
+		// iterate through each response and error check null response
+		// MUST ERROR CHECK HERE @PRIYANKA
+		for await (const { data: issues } of iterator) {
+			for (const issue of issues) {
+				// var curr_issue = new Issue(issue.created_at, issue.updated_at, issue.closed_at);
+				// rv.push(curr_issue);
+				logger.log('info', "Owner: %s, Repo: %s, Issue #%d: %s", this.owner, this.repo, issue.number, issue.title, );
+			}
+		}
 		return new Promise((resolve) => {
 			resolve("");
 		});
