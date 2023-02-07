@@ -200,32 +200,7 @@ export class GithubRepository extends Repository {
 	
 	// @ANDY Will finish this ASAP!
 	async get_contributors_stats():Promise<string> {
-		type IteratorResponseType = GetResponseTypeFromEndpointMethod<
-		typeof this.octokit.paginate.iterator>;
-		type IteratorResponseDataType = GetResponseDataTypeFromEndpointMethod<
-		typeof this.octokit.paginate.iterator>;
 
-		type ContentResponseType = GetResponseTypeFromEndpointMethod<
-		typeof this.octokit.rest.issues.listForRepo>;
-		type ContentResponseDataType = GetResponseDataTypeFromEndpointMethod<
-		typeof this.octokit.rest.issues.listForRepo>;
-
-		var rv:Issue[] = [];
-		// uses octokit REST API to fetch issues list
-		const iterator:IteratorResponseType = this.octokit.paginate.iterator(this.octokit.rest.issues.listForRepo, {
-		  owner: this.owner,
-		  repo: this.repo,
-		  per_page: 100,
-		});
-		// iterate through each response and error check null response
-		// MUST ERROR CHECK HERE @PRIYANKA
-		for await (const { data: issues } of iterator) {
-			for (const issue of issues) {
-				// var curr_issue = new Issue(issue.created_at, issue.updated_at, issue.closed_at);
-				// rv.push(curr_issue);
-				logger.log('info', "Owner: %s, Repo: %s, Issue #%d: %s", this.owner, this.repo, issue.number, issue.title, );
-			}
-		}
 		return new Promise((resolve) => {
 			resolve("");
 		});

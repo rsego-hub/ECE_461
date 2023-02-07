@@ -17,10 +17,6 @@ export abstract class Metric {
 */
 export class LicenseMetric extends Metric {
     async get_metric(repo: Repository):Promise<number> {
-		// test code remove later priyanka
-		var issues_test:Issue[] = await repo.get_issues();
-		console.log(issues_test);
-		// end removal
         const license: string|null = await repo.get_file_content("README.md");
 		if (license != null) {
 	        let regex = new RegExp("LGPL v2.1"); // Very basic regex, can be expanded on in future
@@ -36,7 +32,7 @@ export class LicenseMetric extends Metric {
  * Get average amount of time before an issue or bug is resolved
  *
 */
-/*
+
 export class ResponsiveMetric extends Metric {
     async get_metric(repo: Repository):Promise<number> {
 
@@ -76,6 +72,6 @@ export class ResponsiveMetric extends Metric {
         return 1/(1 + Math.exp(0.00000001*(-x) + 6));
     }
 }
-*/
+
 
 
