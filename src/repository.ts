@@ -73,4 +73,5 @@ export abstract class Repository {
 		Suggest the use of a markdown parsing library
 	*/
     abstract get_readme():Promise<string | null>;
+    abstract get_contributors_stats():Promise<string>;
 }

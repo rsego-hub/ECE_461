@@ -81,7 +81,9 @@ export class GithubRepository extends Repository {
 		var jdata = JSON.parse(JSON.stringify(cdata));
 		var download_url:string = jdata.download_url;
 		const downloaded_file:string|null = await this.download_file_content(download_url);		
-		
+		if (downloaded_file == null) {
+			logger.log('info', "Could not resolve location of downloaded file");
+		}
 		return new Promise((resolve) => {
 			resolve(downloaded_file);
 		});		
@@ -115,14 +117,12 @@ export class GithubRepository extends Repository {
 		// MUST ERROR CHECK HERE @PRIYANKA
 		for await (const { data: issues } of iterator) {
 			for (const issue of issues) {
-				// console.log(issue);
 				var eventcontent:EventsResponseType = await this.octokit.rest.issues.listEvents({
 					owner: this.owner,
 					repo: this.repo,
 					issue_number: issue.number
 				});
 				var eventcdata:EventsResponseDataType = eventcontent.data;
-				console.log(eventcdata.length)
 				var curr_issue = new Issue(issue.created_at, issue.updated_at, issue.closed_at, eventcdata.length);
 				rv.push(curr_issue);
 				logger.log('info', "Owner: %s, Repo: %s, Issue #%d: %s", this.owner, this.repo, issue.number, issue.title, );
@@ -179,9 +179,9 @@ export class GithubRepository extends Repository {
 			  repo: this.repo,
 			});
 			cdata = content.data;
-			logger.log('info', "Fetched license file from " + this.owner + "/" + this.repo);
+			logger.log('info', "Fetched readme file from " + this.owner + "/" + this.repo);
 		} catch (error) {
-			logger.log('debug', "Could not fetch license file from " + this.owner + "/" + this.repo);
+			logger.log('debug', "Could not fetch readme file from " + this.owner + "/" + this.repo);
 			return new Promise((resolve) => {
 				resolve(rv);
 			});	
@@ -192,7 +192,9 @@ export class GithubRepository extends Repository {
 		var jdata = JSON.parse(JSON.stringify(cdata));
 		var download_url:string = jdata.download_url;
 		const downloaded_file:string|null = await this.download_file_content(download_url);		
-		
+		if (downloaded_file == null) {
+			logger.log('info', "Could not resolve location of downloaded file");
+		}
 		return new Promise((resolve) => {
 			resolve(downloaded_file);
 		});	
