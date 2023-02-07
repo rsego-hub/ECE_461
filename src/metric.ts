@@ -34,29 +34,31 @@ export class LicenseMetric extends Metric {
 export class ResponsiveMetric extends Metric {
     async get_metric(repo: Repository):Promise<number> {
 
-        const iterator = await repo.get_issues() // get all issues
+        let issue_arr = await repo.get_issues(); // get all issues
 
         var tot_response_time = 0; // time measured in ms
         var num_events = 0;
-        var prevdate;
 
-        // for each issue
-		for await (const { data: issues } of iterator) {
+        for (var issue in issue_arr) {
+            logger.log('debug', issue);
 
-            // get the first event for the issue
-            const event_iter = issues.listEvents();
-            prevdate = event_iter.next().time.getTime();
+            num_events += issue.total_events; // Add number of events to total count
+            var created_time = new Date(issue.created_at).getTime() // Get time issue was created
 
-            // for each event in the list
-            for await (const event of event_iter) {
-                tot_response_time += new Date(event.time).getTime() - prevdate; // add time since last event to total response time
-                prevdate = event.time;
-                num_events += 1;
+            if(issue.closed_at != null) {
+                tot_response_time += new Date(issue.closed_at).getTime() - created_time;
+            } else if(issue.updated_at != null) {
+                tot_response_time += new Date(issue.updated_at).getTime() - created_time;
+            } else {
+                logger.log('debug', "Issue never updated or closed");
+                tot_response_time += 120000000; // add 2 weeks in time, should round to 1.0 in score
             }
-		}
+            
+        }
 
         // if there were no events, responsiveness is ambiguous, return medium value
         if(num_events == 0) {
+            logger.log('info', 'No events in issue list');
             return 0.5;
         }
 
