@@ -40,6 +40,11 @@ export class ResponsiveMetric extends Metric {
         var num_events = 0;
 
         for (var issue in issue_arr) {
+            if(issue.created_at == null) {
+                logger.log('info', "issue has no created date")
+                return -1
+            }
+
             logger.log('debug', "created_at: %s", issue.created_at);
 
             num_events += issue.total_events; // Add number of events to total count
