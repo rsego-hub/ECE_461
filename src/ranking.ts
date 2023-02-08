@@ -4,11 +4,13 @@ import { Metric } from "./metric"
 class Ranking {
     public display_ranking(repolist: RepositoryList) {
         
+        logger.log('debug', "Beginning repo map construction")
         var repo_score_map = new Map() // Initialize map
         for (var repo in repolist) { // fill table with weighted scores
             repo_score_map.set(repo, Metric.get_weighted_sum(repo)); 
         }
 
+        logger.log('info', "Ranking %d repositories", repolist.length)
         // do once for every repo in list
         for (var i = 0; i < repolist.length; i++) {
             var max_score = -1; // holders for max vals
@@ -24,12 +26,12 @@ class Ranking {
             
             // fail if max_repo is null
             if(max_repo == null) {
-                console.log('debug', "Null repo found");
+                logger.log('debug', "Null repo found");
                 return
             }
 
             // print to console
-            console.log('info', "Issue #%d: %s", max_repo.title,);
+            console.log("%s with score %d", max_repo.title, max_score);
             repo_score_map.delete(max_repo)
             }
         }
