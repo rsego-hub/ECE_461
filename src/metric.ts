@@ -40,7 +40,7 @@ export class ResponsiveMetric extends Metric {
         var num_events = 0;
 
         for (var issue in issue_arr) {
-            logger.log('debug', issue);
+            logger.log('debug', "created_at: %s", issue.created_at);
 
             num_events += issue.total_events; // Add number of events to total count
             var created_time = new Date(issue.created_at).getTime() // Get time issue was created
@@ -61,6 +61,8 @@ export class ResponsiveMetric extends Metric {
             logger.log('info', 'No events in issue list');
             return 0.5;
         }
+
+        logger.log('debug', "Premodified score: %d", tot_response_time / num_events);
 
         // get avg response time, then score, round to 2 digits
         return Math.round(this.sigmoid(tot_response_time / num_events) * 100); 
