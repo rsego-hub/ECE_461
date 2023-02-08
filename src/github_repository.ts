@@ -7,9 +7,21 @@ import Downloader from "nodejs-file-downloader";
 
 import { Repository } from "./repository";
                                                                                         
- /* GithubRepository Class                                                                    
-  *                                                                                           
- */                                                                                           
+ /* GithubRepository Class
+ */
+export class Issue {
+	created_at:string|null;
+	updated_at:string|null;
+	closed_at:string|null;
+	total_events:number|null;
+	constructor(created_at: string|null, updated_at: string|null, closed_at: string|null, total_events: number|null) {
+		this.created_at = created_at;
+		this.updated_at = updated_at;
+		this.closed_at = closed_at;
+		this.total_events = total_events;
+	}
+}
+
 export class GithubRepository extends Repository {
 	private octokit = new Octokit({
     	auth: process.env.GITHUB_TOKEN,
@@ -19,7 +31,8 @@ export class GithubRepository extends Repository {
 		super(owner, repo);
 	}
 	
-	
+	// took from example code in nodejs-file-downloader
+	// https://www.npmjs.com/package/nodejs-file-downloader?activeTab=readme#basic
 	private async download_file_content(url:string):Promise<string | null> {
 		const downloader = new Downloader({
 		  url: url, 
@@ -68,14 +81,16 @@ export class GithubRepository extends Repository {
 		var jdata = JSON.parse(JSON.stringify(cdata));
 		var download_url:string = jdata.download_url;
 		const downloaded_file:string|null = await this.download_file_content(download_url);		
-		
+		if (downloaded_file == null) {
+			logger.log('info', "Could not resolve location of downloaded file");
+		}
 		return new Promise((resolve) => {
 			resolve(downloaded_file);
 		});		
 	}
 	
 	// @ROBERT I am still working on this - will finish asap
-	async get_issues():Promise<string> {
+	async get_issues():Promise<Issue[]> {
 		type IteratorResponseType = GetResponseTypeFromEndpointMethod<
 		typeof this.octokit.paginate.iterator>;
 		type IteratorResponseDataType = GetResponseDataTypeFromEndpointMethod<
@@ -86,40 +101,36 @@ export class GithubRepository extends Repository {
 		type ContentResponseDataType = GetResponseDataTypeFromEndpointMethod<
 		typeof this.octokit.rest.issues.listForRepo>; 
 		
-		var cdata:IteratorResponseDataType;
-		var rv:string|null = null;
+		type EventsResponseType = GetResponseTypeFromEndpointMethod<
+		typeof this.octokit.rest.issues.listEvents>;
+		type EventsResponseDataType = GetResponseDataTypeFromEndpointMethod<
+		typeof this.octokit.rest.issues.listEvents>;
+
+		var rv:Issue[] = [];
 		// uses octokit REST API to fetch issues list
 		const iterator:IteratorResponseType = this.octokit.paginate.iterator(this.octokit.rest.issues.listForRepo, {
 		  owner: this.owner,
 		  repo: this.repo,
 		  per_page: 100,
 		});
-		// iterate through each response
-		var title:string = "";
-		var content:ContentResponseDataType;
+		// iterate through each response and error check null response
+		// MUST ERROR CHECK HERE @PRIYANKA
 		for await (const { data: issues } of iterator) {
 			for (const issue of issues) {
-		   		console.log('debug', "Issue #%d: %s", issue.number, issue.title, );
-				title = issue.title;
+				var eventcontent:EventsResponseType = await this.octokit.rest.issues.listEvents({
+					owner: this.owner,
+					repo: this.repo,
+					issue_number: issue.number
+				});
+				var eventcdata:EventsResponseDataType = eventcontent.data;
+				var curr_issue = new Issue(issue.created_at, issue.updated_at, issue.closed_at, eventcdata.length);
+				rv.push(curr_issue);
+				logger.log('info', "Owner: %s, Repo: %s, Issue #%d: %s", this.owner, this.repo, issue.number, issue.title, );
 		  	}
 		}
 	
-//		// uses octokit REST API to fetch issues list
-//		const iterator = this.octokit.paginate.iterator(this.octokit.rest.issues.listForRepo, {
-//		  owner: "octocat",
-//		  repo: "hello-world",
-//		  per_page: 100,
-//		});
-//		// iterate through each response
-//		var title:string = "";
-//		for await (const { data: issues } of iterator) {
-//			for (const issue of issues) {
-//		   		logger.log('debug', "Issue #%d: %s", issue.number, issue.title);
-//				title = issue.title;
-//		  	}
-//		}
 		return new Promise((resolve) => {
-			resolve(title);
+			resolve(rv);
 		});
 	} 
 
@@ -168,9 +179,9 @@ export class GithubRepository extends Repository {
 			  repo: this.repo,
 			});
 			cdata = content.data;
-			logger.log('info', "Fetched license file from " + this.owner + "/" + this.repo);
+			logger.log('info', "Fetched readme file from " + this.owner + "/" + this.repo);
 		} catch (error) {
-			logger.log('debug', "Could not fetch license file from " + this.owner + "/" + this.repo);
+			logger.log('debug', "Could not fetch readme file from " + this.owner + "/" + this.repo);
 			return new Promise((resolve) => {
 				resolve(rv);
 			});	
@@ -181,7 +192,9 @@ export class GithubRepository extends Repository {
 		var jdata = JSON.parse(JSON.stringify(cdata));
 		var download_url:string = jdata.download_url;
 		const downloaded_file:string|null = await this.download_file_content(download_url);		
-		
+		if (downloaded_file == null) {
+			logger.log('info', "Could not resolve location of downloaded file");
+		}
 		return new Promise((resolve) => {
 			resolve(downloaded_file);
 		});	
@@ -189,6 +202,7 @@ export class GithubRepository extends Repository {
 	
 	// @ANDY Will finish this ASAP!
 	async get_contributors_stats():Promise<string> {
+
 		return new Promise((resolve) => {
 			resolve("");
 		});

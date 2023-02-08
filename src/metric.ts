@@ -1,4 +1,5 @@
 import { Repository } from "./repository"
+import { Issue } from "./github_repository"
 
 /* Metric Class
  * Abstract class to be extendedd for all current and future metric subclass
@@ -12,7 +13,10 @@ export abstract class Metric {
 
 /* License Metric Class
  * Finds compatibility of repository license with GNU Lesser General Public License v2.1
- *
+ * Compatible if MIT or lgpl-v2.1 is the spdx_id IN THIS FORMAT.
+ * @Robert use get_license function that returns spdx_id of license file
+ * if that doesn't exist, use get_readme function to download the README
+ * and parse for regex MIT or LGPL v2.1 or lgpl-v2.1
 */
 export class LicenseMetric extends Metric {
     async get_metric(repo: Repository):Promise<number> {
@@ -29,7 +33,8 @@ export class LicenseMetric extends Metric {
 
 /* Responsive Maintenance Metric Class
  * Get average amount of time before an issue or bug is resolved
- *
+ * @Robert TODO fix with new get_issues return value, make sure to error check
+ * and log errors with logger.log('info', "message");
 */
 export class ResponsiveMetric extends Metric {
     async get_metric(repo: Repository):Promise<number> {
