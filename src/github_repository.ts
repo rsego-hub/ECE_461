@@ -6,8 +6,9 @@ import {
 import Downloader from "nodejs-file-downloader";
 
 import { Repository } from "./repository";
-                                                                                        
- /* GithubRepository Class
+import { cp } from "fs";
+
+ /* Issue Class
  */
 export class Issue {
 	created_at:string|null;
@@ -22,6 +23,32 @@ export class Issue {
 	}
 }
 
+ /* Contributor Class
+ */
+export class Contributor {
+	login:string;
+	total_contributions:number;
+	constructor(login:string, total_contributions:number) {
+		this.login = login;
+		this.total_contributions = total_contributions;
+	}
+}
+
+export class Contributions {
+	total_commit_conts:number;
+	total_issue_conts:number;
+	total_pr_conts:number;
+	contributors:Contributor[];
+	constructor(total_commit_conts:number, total_issue_conts:number, total_pr_conts:number, contributors:Contributor[]) {
+		this.total_commit_conts = total_commit_conts;
+		this.total_issue_conts = total_issue_conts;
+		this.total_pr_conts = total_pr_conts;
+		this.contributors = contributors;
+	}
+}
+
+ /* GithubRepository Class
+ */
 export class GithubRepository extends Repository {
 	private octokit = new Octokit({
     	auth: process.env.GITHUB_TOKEN,
@@ -201,10 +228,43 @@ export class GithubRepository extends Repository {
 	}     
 	
 	// @ANDY Will finish this ASAP!
-	async get_contributors_stats():Promise<string> {
+	async get_contributors_stats():Promise<Contributions> {
+		var contributors:Contributor[] = [];
+		type ContentResponseType = GetResponseTypeFromEndpointMethod<
+		typeof this.octokit.rest.repos.listContributors>;
+		type ContentResponseDataType = GetResponseDataTypeFromEndpointMethod<
+		typeof this.octokit.rest.repos.listContributors>;
+		var cdata:ContentResponseDataType;
+		var rv:Contributions;
+
+		try {
+			var content:ContentResponseType = await this.octokit.rest.repos.listContributors({
+			  owner: this.owner,
+			  repo: this.repo,
+			  anon: "false",
+			});
+			cdata = content.data;
+			logger.log('info', "Fetched readme file from " + this.owner + "/" + this.repo);
+		} catch (error) {
+			logger.log('debug', "Could not fetch readme file from " + this.owner + "/" + this.repo);
+			return new Promise((resolve) => {
+				resolve(rv);
+			});
+		}
+
+		// this does not work for some reason - debug
+		// this is a workaround since we cannot seem to access object properties of cdata above
+		var jdata = JSON.parse(JSON.stringify(cdata));
+		var size:number = jdata.length;
+//		console.log(jdata);
+//		console.log(size);
+//		console.log(jdata[0].contributions);
+		for (const data of jdata) {
+			//console.log(data.contributions);
+		}
 
 		return new Promise((resolve) => {
-			resolve("");
+			resolve(rv);
 		});
 	}                                                                                                                          
  }                                                                                            

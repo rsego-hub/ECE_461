@@ -1,5 +1,5 @@
 import { Repository } from "./repository"
-import { Issue } from "./github_repository"
+import { Issue, Contributor, Contributions } from "./github_repository"
 
 /* Metric Class
  * Abstract class to be extendedd for all current and future metric subclass
@@ -20,6 +20,9 @@ export abstract class Metric {
 */
 export class LicenseMetric extends Metric {
     async get_metric(repo: Repository):Promise<number> {
+		//remove PRIYANKA
+		// const conts:Contributions = await repo.get_contributors_stats();
+		// end removal
         const license: string|null = await repo.get_file_content("README.md");
 		if (license != null) {
 	        let regex = new RegExp("LGPL v2.1"); // Very basic regex, can be expanded on in future
@@ -36,6 +39,7 @@ export class LicenseMetric extends Metric {
  * @Robert TODO fix with new get_issues return value, make sure to error check
  * and log errors with logger.log('info', "message");
 */
+/*
 export class ResponsiveMetric extends Metric {
     async get_metric(repo: Repository):Promise<number> {
 
@@ -75,3 +79,4 @@ export class ResponsiveMetric extends Metric {
         return 1/(1 + Math.exp(0.00000001*(-x) + 6));
     }
 }
+*/

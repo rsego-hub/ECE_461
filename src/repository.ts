@@ -1,4 +1,4 @@
-import { Issue } from "./github_repository"
+import { Issue, Contributor, Contributions } from "./github_repository"
 
 /* Repository Class
  * Abstract class to be extendedd for all current and future Repository subclass
@@ -21,34 +21,7 @@ export abstract class Repository {
 		this.owner = owner;
 		this.repo = repo;
 	}
-	/*
-	constructor(url_val:string) {
-		var url_obj:URL;
-		try {
-			url_obj = new URL(url_val);
-		} catch(error) {
-			throw "Invalid URL input!";
-		}
 
-		this.url_obj = url_obj;
-		var host:string = this.url_obj.host;
-		var pathname:string = this.url_obj.pathname;
-
-		if (host == "github.com") {
-			this.url_type = "git";
-			if (pathname )
-		}
-		else if (host == "www.npmjs.com") {
-			this.url_type = "npm";
-		}
-		else {
-			this.url_type = "";
-		}
-
-		this.owner = ;
-		this.repo = ;
-	}
-	*/
 	/* get_license() function
 		returns license file spdx_id as string or null
 		a valid spdx-id will be lgpl-2.1 or MIT
@@ -73,5 +46,5 @@ export abstract class Repository {
 		Suggest the use of a markdown parsing library
 	*/
     abstract get_readme():Promise<string | null>;
-    abstract get_contributors_stats():Promise<string>;
+    abstract get_contributors_stats():Promise<Contributions>;
 }
