@@ -190,9 +190,9 @@ type NulNum = number|null;
 
 async function process_urls(filename:string) {
 	var url_vals:string[] = await get_file_lines(filename);
-	var metrics_array:MetricsCollection[] = [];
+	var metrics_array:GroupMetric[]= [];
 	var owner_and_repo:OwnerAndRepo|null;
-	
+	var promises_of_metrics:Promise<GroupMetric>[] = [];
 	for (const url_val of url_vals) {
 		// change this to .then and .catch for error checking
 		owner_and_repo = await get_real_owner_and_repo(url_val);
@@ -202,40 +202,34 @@ async function process_urls(filename:string) {
 			// change this to .then and .catch for error checking
 			// var result:number[] = await metrics_collection.get_metrics();
 			// console.log(owner_and_repo, result);
-			var promises_of_metrics:Promise<GroupMetric>[] = await metrics_collection.get_metrics();
-					 
-			const allPromise = Promise.allSettled(promises_of_metrics);
-			var result_arr:NulNum[] = [];
-
-			allPromise.then((value) => {
-				console.log('Resolved:', value);
-				var jdata = JSON.parse(JSON.stringify(value));
-				var count:number = 0;
-				for (const result of jdata) {
-					if (count == 0) {
-						result_arr = [];
-					}
-					switch(result.status) {
-						case 'fulfilled': {
-							result_arr.push(Number(result.value));
-							break;
-						}
-						case 'rejected': {
-							console.log('error =>', result.reason);
-							result_arr.push(null);
-							break;
-						}
-					}
-					count++;
-				}
-			}).catch((error) => {
-				console.log('Rejected:', error);
-			}).finally(() => {
-				logger.log('info', "Finished get_metrics for repo");
-				metrics_array.push(metrics_collection);
-			});
+			var tmp_promises:Promise<GroupMetric>[] = await metrics_collection.get_metrics();
+			promises_of_metrics = promises_of_metrics.concat(tmp_promises);
 		}
-	}
+	} 
+	const allPromise = Promise.allSettled(promises_of_metrics);
+
+	allPromise.then((value) => {
+		console.log('Resolved:', value);
+		var jdata = JSON.parse(JSON.stringify(value));
+		for (const result of jdata) {
+			switch(result.status) {
+				case 'fulfilled': {
+					metrics_array.push(result.value);
+					break;
+				}
+				case 'rejected': {
+					console.log('error =>', result.reason);
+					metrics_array.push(result.value);
+					break;
+				}
+			}
+		}
+	}).catch((error) => {
+		console.log('Rejected:', error);
+	}).finally(() => {
+		console.log('info', "Finished get_metrics for all repos");
+		console.log(metrics_array);
+	});
 }
 
 
