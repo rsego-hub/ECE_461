@@ -3,7 +3,7 @@ import {describe, expect, test} from '@jest/globals';
 import {Metric, LicenseMetric, ResponsiveMetric} from '../src/metric';
 import {GithubRepository} from '../src/github_repository';
 
-describe('License Module', () => {
+describe('License Metric Module', () => {
     // prelimnary tests, unrun due to relying on functionality not merged yet
     test('MIT license should be compatible', () => {
         var repo:GithubRepository = new GithubRepository("Test", "https://github.com/lodash/lodash");
@@ -17,7 +17,7 @@ describe('License Module', () => {
     })
 })
 
-describe('Responsive Module', () => {
+describe('Responsive Metric Module', () => {
     test('Repo with weeks between issue responsive', () => {
         var repo:GithubRepository = new GithubRepository("Test", "https://github.com/lodash/lodash");
         var met:ResponsiveMetric = new ResponsiveMetric();
