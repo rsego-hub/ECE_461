@@ -16,13 +16,22 @@ export abstract class Metric {
 */
 export class LicenseMetric extends Metric {
     async get_metric(repo: Repository):Promise<number> {
-        const license: string|null = await repo.get_file_content("README.md");
-		if (license != null) {
-	        let regex = new RegExp("LGPL v2.1"); // Very basic regex, can be expanded on in future
-	        if(regex.test(license)) {
-	            return 1
-	        }
-	    }
+
+
+        var license: string|null = await repo.get_license(); // ask for license file
+        if (license == null) {
+            logger.log('info', "No license file, retreiving README");
+            license = await repo.get_file_content("README.md"); // ask for readme
+            if (license == null) {
+                logger.log('info', "No license or readme found");
+                return 0
+            }
+        }
+        
+        let regex = new RegExp("(GNU\s*)?L?GPL\s*v?(?:2|3)");
+        if(regex.test(license)) {
+            return 1
+        }
         return 0
     }
 }
