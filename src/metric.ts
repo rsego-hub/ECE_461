@@ -135,20 +135,25 @@ export class CorrectnessMetric extends Metric {
 export class ResponsiveMetric extends Metric {
     async get_metric(repo: Repository):Promise<number> {
 
-        let issue_arr = await repo.get_issues(); // get all issues
+        const issue_arr:Issue[] = await repo.get_issues(); // get all issues
 
         var tot_response_time = 0; // time measured in ms
         var num_events = 0;
 
-        for (var issue in issue_arr) {
+        for (var issue of issue_arr) {
             if(issue.created_at == null) {
                 logger.log('info', "issue has no created date")
                 return -1
             }
-
             logger.log('debug', "created_at: %s", issue.created_at);
 
-            num_events += issue.total_events; // Add number of events to total count
+            if(issue.total_events == null || issue.total_events == 0) {
+                logger.log('info', "issue has no events")
+                num_events += 1
+            } else {
+                num_events += issue.total_events; // Add number of events to total count
+            }
+            
             var created_time = new Date(issue.created_at).getTime() // Get time issue was created
 
             if(issue.closed_at != null) {
