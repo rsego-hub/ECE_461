@@ -35,14 +35,14 @@ export class Contributor {
 }
 
 export class Contributions {
-	total_commit_conts:number;
-	total_issue_conts:number;
-	total_pr_conts:number;
+	total_commits_6mo:number;
+	last_release_date:string|null;
+	last_pushed_date:string|null;
 	contributors:Contributor[];
-	constructor(total_commit_conts:number, total_issue_conts:number, total_pr_conts:number, contributors:Contributor[]) {
-		this.total_commit_conts = total_commit_conts;
-		this.total_issue_conts = total_issue_conts;
-		this.total_pr_conts = total_pr_conts;
+	constructor(total_commits_6mo:number, last_release_date:string|null, last_pushed_date:string|null, contributors:Contributor[]) {
+		this.total_commits_6mo = total_commits_6mo;
+		this.last_release_date = last_release_date;
+		this.last_pushed_date = last_pushed_date;
 		this.contributors = contributors;
 	}
 }
@@ -120,13 +120,6 @@ export class GithubRepository extends Repository {
 	async get_issues():Promise<Issue[]> {
 		type IteratorResponseType = GetResponseTypeFromEndpointMethod<
 		typeof this.octokit.paginate.iterator>;
-		type IteratorResponseDataType = GetResponseDataTypeFromEndpointMethod<
-		typeof this.octokit.paginate.iterator>; 
-		
-		type ContentResponseType = GetResponseTypeFromEndpointMethod<
-		typeof this.octokit.rest.issues.listForRepo>;
-		type ContentResponseDataType = GetResponseDataTypeFromEndpointMethod<
-		typeof this.octokit.rest.issues.listForRepo>; 
 		
 		type EventsResponseType = GetResponseTypeFromEndpointMethod<
 		typeof this.octokit.rest.issues.listEvents>;
@@ -227,6 +220,10 @@ export class GithubRepository extends Repository {
 		});	
 	}     
 	
+	private async get_graphql_schema() {
+		
+	}
+	
 	// @ANDY Will finish this ASAP!
 	async get_contributors_stats():Promise<Contributions> {
 		var contributors:Contributor[] = [];
@@ -256,13 +253,14 @@ export class GithubRepository extends Repository {
 		// this is a workaround since we cannot seem to access object properties of cdata above
 		var jdata = JSON.parse(JSON.stringify(cdata));
 		var size:number = jdata.length;
-//		console.log(jdata);
-//		console.log(size);
-//		console.log(jdata[0].contributions);
 		for (const data of jdata) {
-			//console.log(data.contributions);
+			contributors.push(new Contributor(data.login, data.contributions));
 		}
-
+		
+		
+		// GRAPHQL CALLS
+		
+		
 		return new Promise((resolve) => {
 			resolve(rv);
 		});

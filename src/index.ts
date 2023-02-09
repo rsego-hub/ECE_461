@@ -89,22 +89,60 @@ class OwnerAndRepo {
 	}
 }
 
-function get_real_owner_and_repo(url_val:string):OwnerAndRepo|null {
+async function fetch_npm_registry_data(registry_url:string):Promise<string[]> {
+	var url_obj:URL;
+	var git_url:string
+	var owner_repo:string[] = [];
+	
+	try {
+		url_obj = new URL(registry_url);
+	} catch(error) {
+		// @Priyanka does this need to be changed?
+		throw "Invalid registry URL input!";
+	}
+	
+	if (registry_url != null) {
+		const endpoint = registry_url;
+		const res = await fetch(endpoint);
+		const data = await res.json();
+		git_url = data.repository.url;
+		var url_pieces:string[] = git_url.split("/");
+		var repo:string = url_pieces[url_pieces.length-1];
+		if (repo.endsWith(".git")) {
+			repo = repo.split(".git")[0];
+		}
+		var owner:string = url_pieces[url_pieces.length-2];
+		owner_repo.push(owner);
+		owner_repo.push(repo);
+	}
+	return new Promise((resolve) => {
+		resolve(owner_repo);
+	});
+}
+
+async function get_real_owner_and_repo(url_val:string):Promise<OwnerAndRepo|null> {
 	var url_obj:URL;
 	try {
 		url_obj = new URL(url_val);
 	} catch(error) {
+		// @Priyanka does this need to be changed?
 		throw "Invalid URL input!";
 	}
 
 	var host:string = url_obj.host;
 	var pathname:string = url_obj.pathname;
-
 	if (host == "github.com") {
-		return new OwnerAndRepo("cloudinary", "cloudinary_npm");
+		var url_pieces:string[] = pathname.split("/");
+		return new OwnerAndRepo(url_pieces[1], url_pieces[2]);
 	}
 	else if (host == "www.npmjs.com") {
-		console.log("npm not supported yet");
+		var url_pieces:string[] = pathname.split("/");
+		var package_name:string = url_pieces[2];
+		var registry_url:string = "https://registry.npmjs.org/" + package_name;
+		var owner_and_repo:string[] = await fetch_npm_registry_data(registry_url);
+		if (owner_and_repo.length != 0) {
+			return new OwnerAndRepo(owner_and_repo[0], owner_and_repo[1]);
+		}
 		return null;
 	}
 	else {
@@ -123,11 +161,48 @@ class MetricsCollection {
 		this.owner_and_repo = owner_and_repo;
 		this.git_repo = new GithubRepository(owner_and_repo.owner, owner_and_repo.repo);
 		this.license_metric = license_metric;
+		this.promises_of_metrics = [];
 	}
 
-	async get_metrics():Promise<number[]> {
-		var curr_promise:Promise<number>;
-		await this.license_metric.get_metric(this.git_repo);
+	async get_metrics():Promise<number[]>{
+		var result_arr:number[] = [];
+		this.promises_of_metrics[0] = this.license_metric.get_metric(this.git_repo);
+		this.promises_of_metrics[1] = this.license_metric.get_metric(this.git_repo);  
+		// this.promises_of_metrics.push(this.<new_metric>.get_metric(this.git_repo));
+		 
+		const allPromise = Promise.allSettled(this.promises_of_metrics);
+		
+		allPromise.then((value) => {
+			//console.log(this.owner_and_repo);
+			//console.log('Resolved:', value);
+			var jdata = JSON.parse(JSON.stringify(value));
+			//console.log(jdata);
+			for (const result of jdata) {
+				switch(result.status) {
+					case 'fulfilled': {
+						console.log('success =>', result.value);
+						result_arr.push(Number(result.value));
+						break;
+					}
+					case 'rejected': {
+						//console.log('error =>', result.reason);
+						// result_arr.push(null);
+						break;
+					}
+				}
+			}
+		}).catch((error) => {
+			console.log('Rejected:', error);
+		}).finally(() => {
+			logger.log('info', "Finished get_metrics for repo");
+			console.log(result_arr);
+			return new Promise((resolve) => {
+				resolve(result_arr);
+			});
+		});
+		return new Promise((resolve) => {
+			resolve(result_arr);
+		});
 	}
 }
 
@@ -137,10 +212,16 @@ async function process_urls(filename:string) {
 
 	var owner_and_repo:OwnerAndRepo|null;
 	for (const url_val of url_vals) {
-		owner_and_repo = get_real_owner_and_repo(url_val);
+		owner_and_repo = await get_real_owner_and_repo(url_val);
 		if (owner_and_repo != null) {
-			// testing code for accessors temporary
+			// var metrics_collection:MetricsCollection = new MetricsCollection(owner_and_repo, new LicenseMetric(), new <NewMetric()>...);
 			var metrics_collection:MetricsCollection = new MetricsCollection(owner_and_repo, new LicenseMetric());
+			// change this to .then and .catch for error checking
+			// var result:number[] = await metrics_collection.get_metrics();
+			// console.log(owner_and_repo, result);
+			const metric_vals:number[] = await metrics_collection.get_metrics();
+			console.log("metric_vals");
+			console.log(metric_vals);
 			// metric.get_metric(git_repo).then(result => {console.log('info', result)});
 		}
 	}
