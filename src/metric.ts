@@ -36,16 +36,21 @@ export class LicenseMetric extends Metric {
 		// const conts:Contributions = await repo.get_contributors_stats();
 		// end removal
 		var final_score:number;
-        const license: string|null = await repo.get_file_content("README.md");
-		if (license != null) {
-	        let regex = new RegExp("LGPL v2.1"); // Very basic regex, can be expanded on in future
-	        if(regex.test(license)) {
-	            final_score = 1
-	        }
-	    }
-	    
-        final_score = 0;
+        var license: string|null = await repo.get_license(); // ask for license file
+        if (license == null) {
+            logger.log('info', "No license file, retreiving README");
+            license = await repo.get_readme(); // ask for readme
+            if (license == null) {
+                logger.log('info', "No license or readme found");
+                final_score = 0;
+            }
+        }
         
+        let regex = new RegExp("(GNU\s*)?L?GPL\s*v?(?:2|3)|MIT\s*(L|l)icense");
+        if(regex.test(license as string)) {
+            final_score = 1;
+        }
+        final_score = 0;
         return new Promise((resolve) => {
 			resolve(new GroupMetric(repo.url, "LICENSE_SCORE", final_score));
 		});
@@ -59,41 +64,45 @@ export class LicenseMetric extends Metric {
 */
 /*
 export class ResponsiveMetric extends Metric {
-    async get_metric(repo: Repository):Promise<GroupMetric> {
+    async get_metric(repo: Repository):Promise<number> {
 
-        const iterator = await repo.get_issues() // get all issues
+        let issue_arr = await repo.get_issues(); // get all issues
 
         var tot_response_time = 0; // time measured in ms
         var num_events = 0;
-        var prevdate;
-        
-        var final_score:number;
-        
-        // for each issue
-		for await (const { data: issues } of iterator) {
 
-            // get the first event for the issue
-            const event_iter = issues.listEvents();
-            prevdate = event_iter.next().time.getTime();
-
-            // for each event in the list
-            for await (const event of event_iter) {
-                tot_response_time += new Date(event.time).getTime() - prevdate; // add time since last event to total response time
-                prevdate = event.time;
-                num_events += 1;
+        for (var issue in issue_arr) {
+            if(issue.created_at == null) {
+                logger.log('info', "issue has no created date")
+                return -1
             }
-		}
+
+            logger.log('debug', "created_at: %s", issue.created_at);
+
+            num_events += issue.total_events; // Add number of events to total count
+            var created_time = new Date(issue.created_at).getTime() // Get time issue was created
+
+            if(issue.closed_at != null) {
+                tot_response_time += new Date(issue.closed_at).getTime() - created_time;
+            } else if(issue.updated_at != null) {
+                tot_response_time += new Date(issue.updated_at).getTime() - created_time;
+            } else {
+                logger.log('debug', "Issue never updated or closed");
+                tot_response_time += 120000000; // add 2 weeks in time, should round to 1.0 in score
+            }
+            
+        }
 
         // if there were no events, responsiveness is ambiguous, return medium value
         if(num_events == 0) {
-            final_score = 0.5;
+            logger.log('info', 'No events in issue list');
+            return 0.5;
         }
 
+        logger.log('debug', "Premodified score: %d", tot_response_time / num_events);
+
         // get avg response time, then score, round to 2 digits
-        final_score = Math.round(this.sigmoid(tot_response_time / num_events) * 100);
-        return new Promise((resolve) => {
-			resolve(new GroupMetric(repo.url, "RESPONSIVE_MAINTAINER_SCORE", final_score));
-		}); 
+        return Math.round(this.sigmoid(tot_response_time / num_events) * 100); 
     }
 
     // Takes value in ms, numbers less than 1 hour are extremely close to 0
