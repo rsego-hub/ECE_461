@@ -104,18 +104,24 @@ async function fetch_npm_registry_data(registry_url:string):Promise<string[]> {
 	}
 	
 	if (registry_url != null) {
-		const endpoint = registry_url;
-		const res = await fetch(endpoint);
-		const data = await res.json();
-		git_url = data.repository.url;
-		var url_pieces:string[] = git_url.split("/");
-		var repo:string = url_pieces[url_pieces.length-1];
-		if (repo.endsWith(".git")) {
-			repo = repo.split(".git")[0];
+		try {
+			const endpoint = registry_url;
+			const res = await fetch(endpoint);
+			const data = await res.json();
+			git_url = data.repository.url;
+			var url_pieces:string[] = git_url.split("/");
+			var repo:string = url_pieces[url_pieces.length-1];
+			if (repo.endsWith(".git")) {
+				repo = repo.split(".git")[0];
+			}
+			var owner:string = url_pieces[url_pieces.length-2];
+			owner_repo.push(owner);
+			owner_repo.push(repo);
+		} catch(error) {
+			return new Promise((reject) => {
+				reject(owner_repo);
+			});
 		}
-		var owner:string = url_pieces[url_pieces.length-2];
-		owner_repo.push(owner);
-		owner_repo.push(repo);
 	}
 	return new Promise((resolve) => {
 		resolve(owner_repo);
@@ -141,9 +147,13 @@ async function get_real_owner_and_repo(url_val:string):Promise<OwnerAndRepo|null
 		var url_pieces:string[] = pathname.split("/");
 		var package_name:string = url_pieces[2];
 		var registry_url:string = "https://registry.npmjs.org/" + package_name;
-		var owner_and_repo:string[] = await fetch_npm_registry_data(registry_url);
-		if (owner_and_repo.length != 0) {
-			return new OwnerAndRepo(url_val, owner_and_repo[0], owner_and_repo[1]);
+		try {
+			var owner_and_repo:string[] = await fetch_npm_registry_data(registry_url);
+			if (owner_and_repo.length != 0) {
+				return new OwnerAndRepo(url_val, owner_and_repo[0], owner_and_repo[1]);
+			}
+		} catch (error) {
+			return null;
 		}
 		return null;
 	}
@@ -186,7 +196,6 @@ class MetricsCollection {
 
 // citation: typing union type arrays
 // https://stackoverflow.com/questions/62320779/typescript-how-to-type-an-array-of-number-or-null-elements-where-the-first-elem
-type NulNum = number|null;
 
 async function process_urls(filename:string) {
 	var url_vals:string[] = await get_file_lines(filename);
@@ -199,11 +208,14 @@ async function process_urls(filename:string) {
 		if (owner_and_repo != null) {
 			// var metrics_collection:MetricsCollection = new MetricsCollection(owner_and_repo, new LicenseMetric(), new <NewMetric()>...);
 			var metrics_collection:MetricsCollection = new MetricsCollection(owner_and_repo, new LicenseMetric());
-			// change this to .then and .catch for error checking
-			// var result:number[] = await metrics_collection.get_metrics();
-			// console.log(owner_and_repo, result);
 			var tmp_promises:Promise<GroupMetric>[] = await metrics_collection.get_metrics();
 			promises_of_metrics = promises_of_metrics.concat(tmp_promises);
+		}
+		else {
+			console.log("INVALID URL!");
+			// @everyone add all metrics with null for bogus URLs
+			metrics_array.push(new GroupMetric(url_val, "LICENSE_SCORE", null),
+			new GroupMetric(url_val, "LICENSE_SCORE", null));
 		}
 	} 
 	const allPromise = Promise.allSettled(promises_of_metrics);
@@ -229,6 +241,8 @@ async function process_urls(filename:string) {
 	}).finally(() => {
 		console.log('info', "Finished get_metrics for all repos");
 		console.log(metrics_array);
+		// map with keys as url with values for each metric
+		// calculate net score, sort by net score, print
 	});
 }
 
@@ -236,11 +250,4 @@ async function process_urls(filename:string) {
 // MAIN IS AND SHOULD BE JUST THIS, since process_urls is the "asynchronous main"
 const filename:string = process.argv[2];
 process_urls(filename);
-
-
-
-
-
-
-
 

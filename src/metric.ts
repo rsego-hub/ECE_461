@@ -1,27 +1,17 @@
 import { Repository } from "./repository"
 import { Issue, Contributor, Contributions } from "./github_repository"
+type NullNum = number|null;
 
 export class GroupMetric {
 	url:string;
 	metric_name:string;
-	metric_val:number;
-	constructor(url:string, metric_name:string, metric_val:number) {
+	metric_val:NullNum;
+	constructor(url:string, metric_name:string, metric_val:NullNum) {
 		this.url = url;
 		this.metric_name = metric_name;
 		this.metric_val = metric_val;
 	}
 }
-
-/*
-export abstract class GroupMetricsForURL {
-	url:string;
-	metrics:GroupMetric[];
-	constructor(url:string, metrics:GroupMetric[]) {
-		this.url = url;
-		this.metrics = metrics;
-	}
-}
-*/
 
 /* Metric Class
  * Abstract class to be extended for all current and future metric subclass
