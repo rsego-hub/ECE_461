@@ -1,7 +1,7 @@
 import { Repository } from "./repository"
 
 /* Metric Class
- * Abstract class to be extendedd for all current and future metric subclass
+ * Abstract class to be extended for all current and future metric subclass
  * 
  * Subclasses:
  * License, BusFactor, RampUp, ResponsiveMaintainer, Correctness
@@ -17,18 +17,17 @@ export abstract class Metric {
 export class LicenseMetric extends Metric {
     async get_metric(repo: Repository):Promise<number> {
 
-
         var license: string|null = await repo.get_license(); // ask for license file
         if (license == null) {
             logger.log('info', "No license file, retreiving README");
-            license = await repo.get_file_content("README.md"); // ask for readme
+            license = await repo.get_readme(); // ask for readme
             if (license == null) {
                 logger.log('info', "No license or readme found");
                 return 0
             }
         }
         
-        let regex = new RegExp("(GNU\s*)?L?GPL\s*v?(?:2|3)");
+        let regex = new RegExp("(GNU\s*)?L?GPL\s*v?(?:2|3)|MIT\s*(L|l)icense");
         if(regex.test(license)) {
             return 1
         }
