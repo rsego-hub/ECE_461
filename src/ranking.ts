@@ -2,7 +2,7 @@
 import { Repository } from "./repository"
 import { Metric } from "./metric"
 
-class Ranking {
+export class Ranking {
     public display_ranking(repolist: RepositoryList) {
         
         logger.log('debug', "Beginning repo map construction")

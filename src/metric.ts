@@ -15,7 +15,6 @@ export class GroupMetric {
 		this.metric_val = metric_val;
 	}
 }
-
 /* Metric Class
  * Abstract class to be extended for all current and future metric subclass
  * 
