@@ -1,14 +1,36 @@
 import { Repository } from "./repository"
 import { Issue, Contributor, Contributions } from "./github_repository"
 
+export class GroupMetric {
+	url:string;
+	metric_name:string;
+	metric_val:number;
+	constructor(url:string, metric_name:string, metric_val:number) {
+		this.url = url;
+		this.metric_name = metric_name;
+		this.metric_val = metric_val;
+	}
+}
+
+/*
+export abstract class GroupMetricsForURL {
+	url:string;
+	metrics:GroupMetric[];
+	constructor(url:string, metrics:GroupMetric[]) {
+		this.url = url;
+		this.metrics = metrics;
+	}
+}
+*/
+
 /* Metric Class
- * Abstract class to be extendedd for all current and future metric subclass
+ * Abstract class to be extended for all current and future metric subclass
  * 
  * Subclasses:
  * License, BusFactor, RampUp, ResponsiveMaintainer, Correctness
 */
 export abstract class Metric {
-    abstract get_metric(repo: Repository):Promise<number>;
+    abstract get_metric(repo: Repository):Promise<GroupMetric>;
 }
 
 /* License Metric Class
@@ -19,18 +41,24 @@ export abstract class Metric {
  * and parse for regex MIT or LGPL v2.1 or lgpl-v2.1
 */
 export class LicenseMetric extends Metric {
-    async get_metric(repo: Repository):Promise<number> {
-		//remove PRIYANKA
+    async get_metric(repo: Repository):Promise<GroupMetric> {
+		// remove PRIYANKA
 		// const conts:Contributions = await repo.get_contributors_stats();
 		// end removal
+		var final_score:number;
         const license: string|null = await repo.get_file_content("README.md");
 		if (license != null) {
 	        let regex = new RegExp("LGPL v2.1"); // Very basic regex, can be expanded on in future
 	        if(regex.test(license)) {
-	            return 1
+	            final_score = 1
 	        }
 	    }
-        return 0
+	    
+        final_score = 0;
+        
+        return new Promise((resolve) => {
+			resolve(new GroupMetric(repo.url, "LICENSE_SCORE", final_score));
+		});
     }
 }
 
@@ -41,14 +69,16 @@ export class LicenseMetric extends Metric {
 */
 /*
 export class ResponsiveMetric extends Metric {
-    async get_metric(repo: Repository):Promise<number> {
+    async get_metric(repo: Repository):Promise<GroupMetric> {
 
         const iterator = await repo.get_issues() // get all issues
 
         var tot_response_time = 0; // time measured in ms
         var num_events = 0;
         var prevdate;
-
+        
+        var final_score:number;
+        
         // for each issue
 		for await (const { data: issues } of iterator) {
 
@@ -66,11 +96,14 @@ export class ResponsiveMetric extends Metric {
 
         // if there were no events, responsiveness is ambiguous, return medium value
         if(num_events == 0) {
-            return 0.5;
+            final_score = 0.5;
         }
 
         // get avg response time, then score, round to 2 digits
-        return Math.round(this.sigmoid(tot_response_time / num_events) * 100); 
+        final_score = Math.round(this.sigmoid(tot_response_time / num_events) * 100);
+        return new Promise((resolve) => {
+			resolve(new GroupMetric(repo.url, "RESPONSIVE_MAINTAINER_SCORE", final_score));
+		}); 
     }
 
     // Takes value in ms, numbers less than 1 hour are extremely close to 0

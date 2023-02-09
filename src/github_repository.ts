@@ -54,8 +54,8 @@ export class GithubRepository extends Repository {
     	auth: process.env.GITHUB_TOKEN,
 	});                                
      
-	constructor(owner: string, repo: string) {
-		super(owner, repo);
+	constructor(url:string, owner: string, repo: string) {
+		super(url, owner, repo);
 	}
 	
 	// took from example code in nodejs-file-downloader

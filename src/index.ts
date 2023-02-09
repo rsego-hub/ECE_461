@@ -1,5 +1,5 @@
 import { createLogger, format, transports } from "winston";
-import { Metric, LicenseMetric } from "./metric"
+import { GroupMetric, Metric, LicenseMetric } from "./metric"
 import { GithubRepository } from "./github_repository"
 import { Repository } from "./repository"
 
@@ -81,9 +81,11 @@ async function get_file_lines(filename:string):Promise<string[]> {
 }
 
 class OwnerAndRepo {
+	url:string;
 	owner:string;
 	repo:string;
-	constructor(owner:string, repo:string) {
+	constructor(url:string, owner:string, repo:string) {
+		this.url = url;
 		this.owner = owner;
 		this.repo = repo;
 	}
@@ -133,7 +135,7 @@ async function get_real_owner_and_repo(url_val:string):Promise<OwnerAndRepo|null
 	var pathname:string = url_obj.pathname;
 	if (host == "github.com") {
 		var url_pieces:string[] = pathname.split("/");
-		return new OwnerAndRepo(url_pieces[1], url_pieces[2]);
+		return new OwnerAndRepo(url_val, url_pieces[1], url_pieces[2]);
 	}
 	else if (host == "www.npmjs.com") {
 		var url_pieces:string[] = pathname.split("/");
@@ -141,7 +143,7 @@ async function get_real_owner_and_repo(url_val:string):Promise<OwnerAndRepo|null
 		var registry_url:string = "https://registry.npmjs.org/" + package_name;
 		var owner_and_repo:string[] = await fetch_npm_registry_data(registry_url);
 		if (owner_and_repo.length != 0) {
-			return new OwnerAndRepo(owner_and_repo[0], owner_and_repo[1]);
+			return new OwnerAndRepo(url_val, owner_and_repo[0], owner_and_repo[1]);
 		}
 		return null;
 	}
@@ -150,68 +152,49 @@ async function get_real_owner_and_repo(url_val:string):Promise<OwnerAndRepo|null
 	}
 }
 
+/*
+class EachPackageMetrics {
+	owner_and_repo:OwnerAndRepo;
+	scores:NulNum[];
+	constructor(owner_and_repo:OwnerAndRepo, scores:NulNum[]) {
+		this.owner_and_repo = owner_and_repo;
+		this.scores = scores;
+	}
+}
+*/
+
 class MetricsCollection {
 	owner_and_repo:OwnerAndRepo;
 	private git_repo:Repository;
 	license_metric:LicenseMetric;
 	//add more here as they are completed @everyone
-	private promises_of_metrics:Promise<number>[];
 	
 	constructor(owner_and_repo:OwnerAndRepo, license_metric:LicenseMetric) {
 		this.owner_and_repo = owner_and_repo;
-		this.git_repo = new GithubRepository(owner_and_repo.owner, owner_and_repo.repo);
+		this.git_repo = new GithubRepository(owner_and_repo.url, owner_and_repo.owner, owner_and_repo.repo);
 		this.license_metric = license_metric;
-		this.promises_of_metrics = [];
 	}
 
-	async get_metrics():Promise<number[]>{
-		var result_arr:number[] = [];
-		this.promises_of_metrics[0] = this.license_metric.get_metric(this.git_repo);
-		this.promises_of_metrics[1] = this.license_metric.get_metric(this.git_repo);  
+	async get_metrics():Promise<Promise<GroupMetric>[]> {
+		var promises_of_metrics:Promise<GroupMetric>[] = [];
+		promises_of_metrics[0] = this.license_metric.get_metric(this.git_repo);
+		promises_of_metrics[1] = this.license_metric.get_metric(this.git_repo);  
 		// this.promises_of_metrics.push(this.<new_metric>.get_metric(this.git_repo));
-		 
-		const allPromise = Promise.allSettled(this.promises_of_metrics);
-		
-		allPromise.then((value) => {
-			//console.log(this.owner_and_repo);
-			//console.log('Resolved:', value);
-			var jdata = JSON.parse(JSON.stringify(value));
-			//console.log(jdata);
-			for (const result of jdata) {
-				switch(result.status) {
-					case 'fulfilled': {
-						console.log('success =>', result.value);
-						result_arr.push(Number(result.value));
-						break;
-					}
-					case 'rejected': {
-						//console.log('error =>', result.reason);
-						// result_arr.push(null);
-						break;
-					}
-				}
-			}
-		}).catch((error) => {
-			console.log('Rejected:', error);
-		}).finally(() => {
-			logger.log('info', "Finished get_metrics for repo");
-			console.log(result_arr);
-			return new Promise((resolve) => {
-				resolve(result_arr);
-			});
-		});
-		return new Promise((resolve) => {
-			resolve(result_arr);
-		});
+		return promises_of_metrics;
 	}
 }
+
+// citation: typing union type arrays
+// https://stackoverflow.com/questions/62320779/typescript-how-to-type-an-array-of-number-or-null-elements-where-the-first-elem
+type NulNum = number|null;
 
 async function process_urls(filename:string) {
 	var url_vals:string[] = await get_file_lines(filename);
 	var metrics_array:MetricsCollection[] = [];
-
 	var owner_and_repo:OwnerAndRepo|null;
+	
 	for (const url_val of url_vals) {
+		// change this to .then and .catch for error checking
 		owner_and_repo = await get_real_owner_and_repo(url_val);
 		if (owner_and_repo != null) {
 			// var metrics_collection:MetricsCollection = new MetricsCollection(owner_and_repo, new LicenseMetric(), new <NewMetric()>...);
@@ -219,10 +202,38 @@ async function process_urls(filename:string) {
 			// change this to .then and .catch for error checking
 			// var result:number[] = await metrics_collection.get_metrics();
 			// console.log(owner_and_repo, result);
-			const metric_vals:number[] = await metrics_collection.get_metrics();
-			console.log("metric_vals");
-			console.log(metric_vals);
-			// metric.get_metric(git_repo).then(result => {console.log('info', result)});
+			var promises_of_metrics:Promise<GroupMetric>[] = await metrics_collection.get_metrics();
+					 
+			const allPromise = Promise.allSettled(promises_of_metrics);
+			var result_arr:NulNum[] = [];
+
+			allPromise.then((value) => {
+				console.log('Resolved:', value);
+				var jdata = JSON.parse(JSON.stringify(value));
+				var count:number = 0;
+				for (const result of jdata) {
+					if (count == 0) {
+						result_arr = [];
+					}
+					switch(result.status) {
+						case 'fulfilled': {
+							result_arr.push(Number(result.value));
+							break;
+						}
+						case 'rejected': {
+							console.log('error =>', result.reason);
+							result_arr.push(null);
+							break;
+						}
+					}
+					count++;
+				}
+			}).catch((error) => {
+				console.log('Rejected:', error);
+			}).finally(() => {
+				logger.log('info', "Finished get_metrics for repo");
+				metrics_array.push(metrics_collection);
+			});
 		}
 	}
 }

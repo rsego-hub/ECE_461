@@ -8,6 +8,7 @@ import { Issue, Contributor, Contributions } from "./github_repository"
 */
 
 export abstract class Repository {
+	url:string;
 	owner: string; // for use in github APIs
 	repo: string; // for use in github APIs
 	/*
@@ -17,7 +18,8 @@ export abstract class Repository {
 	// @PRIYANKA: change constructor to take in string url as 
 	// parameter and set member variables owner, repo, and
 	// type (npm/git) based on URL parsing
-	constructor(owner:string, repo:string) {
+	constructor(url:string, owner:string, repo:string) {
+		this.url = url;
 		this.owner = owner;
 		this.repo = repo;
 	}
