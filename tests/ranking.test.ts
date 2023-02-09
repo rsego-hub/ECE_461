@@ -12,5 +12,7 @@ describe('Ranking Module', () => {
                     new GithubRepository("Test4", "https://github.com/lodash/lodash"), 
                     new GithubRepository("Test5", "https://www.npmjs.com/package/browserify")];
         
+        var rank = new Ranking;
+        rank.display_ranking(repolist); // nothing returned, just console output, maybe do a string return of that?
     })
 })
