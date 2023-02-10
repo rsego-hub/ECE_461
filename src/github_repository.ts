@@ -83,17 +83,36 @@ export class GithubRepository extends Repository {
 		return null;
 	}
 	
-	async get_local_clone() {
+	async get_local_clone():Promise<string | null> {
+		var rv:string|null = null;
 		// const dir = path.join(process.cwd(), 'local_clones/' + this.owner + "_" + this.repo);
+		// remove local_clones/this.repo if it exists
 		const dir = path.join(process.cwd(), 'local_clones', this.repo);
+		fs.rmSync(dir, {recursive:true, force:true});
 		const url = this.cloning_url;
 		try {
-			await git.clone({ fs, http, dir, url: url, singleBranch:true, depth:1 });
+			await git.clone({ fs, http, dir, url: url, singleBranch:true, depth:1 })
+			.then(() => {
+				console.log("Done cloning!");
+				rv = dir;
+				return new Promise((resolve) => {
+					resolve(rv);
+				});
+			}).catch((error) => {
+				console.log("error cloning catch! " + this.owner + " " + this.repo + " " + error);
+				return new Promise((resolve) => {
+					resolve(rv);
+				});
+			});
 		} catch (error) {
 			console.log("error cloning! " + this.owner + " " + this.repo + " " + error);
-			return;
+			return new Promise((resolve) => {
+				resolve(rv);
+			});
 		}
-		console.log("Done cloning");
+		return new Promise((resolve) => {
+			resolve(rv);
+		});
 	}
 
 	// Must input pathname - if in main directory of repo, just put filename.

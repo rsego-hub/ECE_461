@@ -18,8 +18,8 @@ export abstract class Repository {
 		this.repo = repo;
 		this.cloning_url = cloning_url;
 	}
-
-	abstract get_local_clone():void;
+	
+	abstract get_local_clone():Promise<string | null>;
 	
 	/* get_license() function
 		returns license file spdx_id as string or null

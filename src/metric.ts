@@ -1,5 +1,8 @@
 import { Repository } from "./repository"
 import { Issue, Contributor, Contributions } from "./github_repository"
+import fs from "fs"
+import path from "path"
+
 type NullNum = number|null;
 
 export class GroupMetric {
@@ -32,18 +35,14 @@ export abstract class Metric {
 */
 export class LicenseMetric extends Metric {
     async get_metric(repo: Repository):Promise<GroupMetric> {
-		// REMOVAL PRIYANKA
-		//var issues:Issue[] = await repo.get_issues();
-		//console.log(issues);
-		repo.get_readme();
-		repo.get_local_clone();
-		// DONE REMOVAL
 		var final_score:number;
         var license: string|null = await repo.get_license(); // ask for license file
         if (license == null) {
+			console.log("license null");
             logger.log('info', "No license file, retreiving README");
             license = await repo.get_readme(); // ask for readme
             if (license == null) {
+				console.log("readme null");
                 logger.log('info', "No license or readme found");
                 final_score = 0;
             }
@@ -56,6 +55,55 @@ export class LicenseMetric extends Metric {
         final_score = 0;
         return new Promise((resolve) => {
 			resolve(new GroupMetric(repo.url, "LICENSE_SCORE", final_score));
+		});
+    }
+}
+
+
+/* Ramp Up Metric Class
+	@RYAN: skeleton for how you will do your calls
+*/
+export class RampUpMetric extends Metric {
+    async get_metric(repo: Repository):Promise<GroupMetric> {
+		// returns a string filepath to the clone location (directory)
+		// or null if it failed
+		var cloned_dir:string|null = await repo.get_local_clone();
+		var final_score:NullNum = null;
+
+		if (cloned_dir != null) {
+			// do clone work here
+		}
+
+		// do your calculation
+
+        return new Promise((resolve) => {
+			resolve(new GroupMetric(repo.url, "RAMP_UP_SCORE", final_score));
+		});
+    }
+}
+
+/* Bus Factor Metric Class
+	@ANDY skeleton for how you will do your calls
+*/
+export class BusFactorMetric extends Metric {
+    async get_metric(repo: Repository):Promise<GroupMetric> {
+		// returns a string filepath to the clone location (directory)
+		var contributions:Contributions = await repo.get_contributors_stats();
+		var final_score:NullNum = null;
+		
+		var contributors:Contributor[] = contributions.contributors;
+		var total_commits_1yr:NullNum = contributions.total_commits_1yr;
+		var last_pushed_date:string|null = contributions.last_pushed_date;
+		var last_release_date:string|null = contributions.last_release_date;
+		
+		// do null checking for every data point
+		// do an empty check for contributors.length == 0
+		
+
+		// do your calculation
+		// final_score = whatever;
+        return new Promise((resolve) => {
+			resolve(new GroupMetric(repo.url, "BUS_FACTOR_SCORE", final_score));
 		});
     }
 }

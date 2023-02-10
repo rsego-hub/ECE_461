@@ -1,5 +1,5 @@
 import { createLogger, format, transports } from "winston";
-import { GroupMetric, Metric, LicenseMetric } from "./metric"
+import { GroupMetric, Metric, LicenseMetric, RampUpMetric, BusFactorMetric } from "./metric"
 import { GithubRepository } from "./github_repository"
 import { Repository } from "./repository"
 
@@ -248,18 +248,23 @@ class MetricsCollection {
 	owner_and_repo:OwnerAndRepo;
 	private git_repo:Repository;
 	license_metric:LicenseMetric;
+	ramp_up_metric:RampUpMetric;
+	bus_factor_metric:BusFactorMetric;
 	//add more here as they are completed @everyone
 	
-	constructor(owner_and_repo:OwnerAndRepo, license_metric:LicenseMetric) {
+	constructor(owner_and_repo:OwnerAndRepo, license_metric:LicenseMetric, ramp_up_metric:RampUpMetric, bus_factor_metric:BusFactorMetric) {
 		this.owner_and_repo = owner_and_repo;
 		this.git_repo = new GithubRepository(owner_and_repo.url, owner_and_repo.owner, owner_and_repo.repo, owner_and_repo.cloning_url);
 		this.license_metric = license_metric;
+		this.ramp_up_metric = ramp_up_metric;
+		this.bus_factor_metric = bus_factor_metric;
 	}
 
 	async get_metrics():Promise<Promise<GroupMetric>[]> {
 		var promises_of_metrics:Promise<GroupMetric>[] = [];
 		promises_of_metrics[0] = this.license_metric.get_metric(this.git_repo);
-		promises_of_metrics[1] = this.license_metric.get_metric(this.git_repo);  
+		promises_of_metrics[1] = this.ramp_up_metric.get_metric(this.git_repo);
+		promises_of_metrics[2] = this.bus_factor_metric.get_metric(this.git_repo);
 		// this.promises_of_metrics.push(this.<new_metric>.get_metric(this.git_repo));
 		return promises_of_metrics;
 	}
@@ -278,7 +283,7 @@ async function process_urls(filename:string) {
 		owner_and_repo = await get_real_owner_and_repo(url_val);
 		if (owner_and_repo != null) {
 			// var metrics_collection:MetricsCollection = new MetricsCollection(owner_and_repo, new LicenseMetric(), new <NewMetric()>...);
-			var metrics_collection:MetricsCollection = new MetricsCollection(owner_and_repo, new LicenseMetric());
+			var metrics_collection:MetricsCollection = new MetricsCollection(owner_and_repo, new LicenseMetric(), new RampUpMetric(), new BusFactorMetric());
 			var tmp_promises:Promise<GroupMetric>[] = await metrics_collection.get_metrics();
 			promises_of_metrics = promises_of_metrics.concat(tmp_promises);
 		}
