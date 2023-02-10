@@ -83,11 +83,11 @@ export class GithubRepository extends Repository {
 		return null;
 	}
 	
-	async get_local_clone():Promise<string | null> {
+	async get_local_clone(dirAppend:string):Promise<string | null> {
 		var rv:string|null = null;
 		// const dir = path.join(process.cwd(), 'local_clones/' + this.owner + "_" + this.repo);
 		// remove local_clones/this.repo if it exists
-		const dir = path.join(process.cwd(), 'local_clones', this.repo);
+		const dir = path.join(process.cwd(), 'local_clones', this.repo + dirAppend);
 		fs.rmSync(dir, {recursive:true, force:true});
 		const url = this.cloning_url;
 		try {

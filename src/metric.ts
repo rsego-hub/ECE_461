@@ -67,7 +67,7 @@ export class RampUpMetric extends Metric {
     async get_metric(repo: Repository):Promise<GroupMetric> {
 		// returns a string filepath to the clone location (directory)
 		// or null if it failed
-		var cloned_dir:string|null = await repo.get_local_clone();
+		var cloned_dir:string|null = await repo.get_local_clone("RampUp");
 		var final_score:NullNum = null;
 
 		if (cloned_dir != null) {
@@ -104,6 +104,25 @@ export class BusFactorMetric extends Metric {
 		// final_score = whatever;
         return new Promise((resolve) => {
 			resolve(new GroupMetric(repo.url, "BUS_FACTOR_SCORE", final_score));
+		});
+    }
+}
+
+export class CorrectnessMetric extends Metric {
+    async get_metric(repo: Repository):Promise<GroupMetric> {
+		// returns a string filepath to the clone location (directory)
+		// or null if it failed
+		var cloned_dir:string|null = await repo.get_local_clone("Correctness");
+		var final_score:NullNum = null;
+
+		if (cloned_dir != null) {
+			// do clone work here
+		}
+
+		// do your calculation
+
+        return new Promise((resolve) => {
+			resolve(new GroupMetric(repo.url, "CORRECTNESS_SCORE", final_score));
 		});
     }
 }
