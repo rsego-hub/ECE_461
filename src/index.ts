@@ -84,10 +84,12 @@ class OwnerAndRepo {
 	url:string;
 	owner:string;
 	repo:string;
-	constructor(url:string, owner:string, repo:string) {
+	cloning_url:string;
+	constructor(url:string, owner:string, repo:string, cloning_url:string) {
 		this.url = url;
 		this.owner = owner;
 		this.repo = repo;
+		this.cloning_url = cloning_url;
 	}
 }
 
@@ -95,12 +97,15 @@ async function fetch_npm_registry_data(registry_url:string):Promise<string[]> {
 	var url_obj:URL;
 	var git_url:string
 	var owner_repo:string[] = [];
-	
+	console.log("new link");
 	try {
 		url_obj = new URL(registry_url);
 	} catch(error) {
 		// @Priyanka does this need to be changed?
-		throw "Invalid registry URL input!";
+		logger.log('info', "Invalid registry URL input!");
+		return new Promise((reject) => {
+			reject(owner_repo);
+		});
 	}
 	
 	if (registry_url != null) {
@@ -109,15 +114,71 @@ async function fetch_npm_registry_data(registry_url:string):Promise<string[]> {
 			const res = await fetch(endpoint);
 			const data = await res.json();
 			git_url = data.repository.url;
-			var url_pieces:string[] = git_url.split("/");
-			var repo:string = url_pieces[url_pieces.length-1];
-			if (repo.endsWith(".git")) {
-				repo = repo.split(".git")[0];
+			try {
+				url_obj = new URL(git_url);
+			} catch(error) {
+				// @Priyanka does this need to be changed?
+				logger.log('info', "Invalid repository url from npm registry!");
+				return new Promise((reject) => {
+					reject(owner_repo);
+				});
 			}
-			var owner:string = url_pieces[url_pieces.length-2];
-			owner_repo.push(owner);
-			owner_repo.push(repo);
+			var hostname:string = url_obj.host;
+			if (hostname != "github.com") {
+				logger.log('info', "Repository url from npm registry not on github!");
+				return new Promise((reject) => {
+					reject(owner_repo);
+				});
+			}
+			console.log(git_url);
+			console.log(hostname);
+			var pathname:string = url_obj.pathname;
+			console.log(pathname);
+			if (pathname.startsWith("/")) {
+				pathname = pathname.slice(1);
+			}
+			var url_owner:string = pathname.slice(0, pathname.indexOf("/"));
+			var url_repo:string = pathname.slice(pathname.indexOf("/") + 1);
+			
+			if (url_repo.endsWith(".git")) {
+				url_repo = url_repo.split(".git")[0];
+			}
+			owner_repo.push(url_owner);
+			owner_repo.push(url_repo);
+			
+			var protocol:string = git_url.slice(0, git_url.indexOf(":"));
+			console.log(protocol);
+			// handle cloning url (form exactly like sample github urls)
+			if (protocol.startsWith("https")) {
+				console.log("good");
+				owner_repo.push(git_url);
+			}
+			else if (protocol.startsWith("git+https")) {
+				console.log("git+https");
+				// remove git+ from beginning
+				var new_url = git_url.slice(git_url.indexOf("+") + 1);
+				console.log(new_url); 
+				owner_repo.push(new_url);
+				// remove .git from end
+				// @priyanka come back if needed
+			}
+			else if (protocol.startsWith("git+ssh")) {
+				console.log("git+ssh");
+				// remove until :, replace with https:
+				var new_url = "https:" + git_url.slice(git_url.indexOf(":") + 1);
+				// remove git@
+				new_url = new_url.replace("git@", "");
+				console.log(new_url); 
+				owner_repo.push(new_url);
+			}
+			else {
+				console.log("invalid repo URL from npm registry");
+				return new Promise((reject) => {
+					reject(owner_repo);
+				});
+			}
 		} catch(error) {
+			owner_repo = [];
 			return new Promise((reject) => {
 				reject(owner_repo);
 			});
@@ -140,17 +201,27 @@ async function get_real_owner_and_repo(url_val:string):Promise<OwnerAndRepo|null
 	var host:string = url_obj.host;
 	var pathname:string = url_obj.pathname;
 	if (host == "github.com") {
-		var url_pieces:string[] = pathname.split("/");
-		return new OwnerAndRepo(url_val, url_pieces[1], url_pieces[2]);
+		if (pathname.startsWith("/")) {
+			pathname = pathname.slice(1);
+		}
+		var url_owner:string = pathname.slice(0, pathname.indexOf("/"));
+		var url_repo:string = pathname.slice(pathname.indexOf("/") + 1);
+		return new OwnerAndRepo(url_val, url_owner, url_repo, url_val);
 	}
 	else if (host == "www.npmjs.com") {
-		var url_pieces:string[] = pathname.split("/");
-		var package_name:string = url_pieces[2];
-		var registry_url:string = "https://registry.npmjs.org/" + package_name;
+		var package_name:string = pathname.slice(pathname.lastIndexOf("/"));
+		console.log(package_name);
+		var registry_url:string = "https://registry.npmjs.org" + package_name;
 		try {
-			var owner_and_repo:string[] = await fetch_npm_registry_data(registry_url);
+			var owner_and_repo:string[] = [];
+			try {
+				owner_and_repo = await fetch_npm_registry_data(registry_url);
+			} catch (error) {
+				return null;
+			}
 			if (owner_and_repo.length != 0) {
-				return new OwnerAndRepo(url_val, owner_and_repo[0], owner_and_repo[1]);
+				console.log(owner_and_repo[2]);
+				return new OwnerAndRepo(url_val, owner_and_repo[0], owner_and_repo[1], owner_and_repo[2]);
 			}
 		} catch (error) {
 			return null;
@@ -181,7 +252,7 @@ class MetricsCollection {
 	
 	constructor(owner_and_repo:OwnerAndRepo, license_metric:LicenseMetric) {
 		this.owner_and_repo = owner_and_repo;
-		this.git_repo = new GithubRepository(owner_and_repo.url, owner_and_repo.owner, owner_and_repo.repo);
+		this.git_repo = new GithubRepository(owner_and_repo.url, owner_and_repo.owner, owner_and_repo.repo, owner_and_repo.cloning_url);
 		this.license_metric = license_metric;
 	}
 

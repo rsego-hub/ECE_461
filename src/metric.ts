@@ -32,6 +32,12 @@ export abstract class Metric {
 */
 export class LicenseMetric extends Metric {
     async get_metric(repo: Repository):Promise<GroupMetric> {
+		// REMOVAL PRIYANKA
+		//var issues:Issue[] = await repo.get_issues();
+		//console.log(issues);
+		repo.get_readme();
+		repo.get_local_clone();
+		// DONE REMOVAL
 		var final_score:number;
         var license: string|null = await repo.get_license(); // ask for license file
         if (license == null) {
@@ -59,6 +65,7 @@ export class LicenseMetric extends Metric {
  * @Robert TODO fix with new get_issues return value, make sure to error check
  * and log errors with logger.log('info', "message");
 */
+/*
 export class ResponsiveMetric extends Metric {
     async get_metric(repo: Repository):Promise<number> {
 
@@ -107,5 +114,5 @@ export class ResponsiveMetric extends Metric {
         return 1/(1 + Math.exp(0.00000001*(-x) + 6));
     }
 }
-
+*/
 

@@ -14,7 +14,8 @@
     "ts-node": "^10.9.1",
     "tsc": "^2.0.4",
     "winston": "^3.8.2",
-    "@types/node": "^18.11.19"
+    "@types/node": "^18.11.19",
+    "isomorphic-git": "^1.21.0"
   },
   "devDependencies": {
     "@types/jest": "^29.4.0",
