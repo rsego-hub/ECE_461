@@ -4,10 +4,13 @@ import {
   GetResponseDataTypeFromEndpointMethod,
 } from "@octokit/types";
 import Downloader from "nodejs-file-downloader";
+import { graphql, GraphqlResponseError,  } from "@octokit/graphql"
+import type { GraphQlQueryResponseData } from "@octokit/graphql";
 
 import { Repository } from "./repository";
-                                                                                        
- /* GithubRepository Class
+import { cp } from "fs";
+
+ /* Issue Class
  */
 export class Issue {
 	created_at:string|null;
@@ -22,15 +25,41 @@ export class Issue {
 	}
 }
 
+ /* Contributor Class
+ */
+export class Contributor {
+	login:string;
+	total_contributions:number;
+	constructor(login:string, total_contributions:number) {
+		this.login = login;
+		this.total_contributions = total_contributions;
+	}
+}
+
+export class Contributions {
+	total_commits_1yr:number|null;
+	last_release_date:string|null;
+	last_pushed_date:string|null;
+	contributors:Contributor[];
+	constructor(total_commits_1yr:number|null, last_release_date:string|null, last_pushed_date:string|null, contributors:Contributor[]) {
+		this.total_commits_1yr = total_commits_1yr;
+		this.last_release_date = last_release_date;
+		this.last_pushed_date = last_pushed_date;
+		this.contributors = contributors;
+	}
+}
+
+ /* GithubRepository Class
+ */
 export class GithubRepository extends Repository {
 	private octokit = new Octokit({
     	auth: process.env.GITHUB_TOKEN,
-	});                                
-     
-	constructor(owner: string, repo: string) {
-		super(owner, repo);
+	});
+  
+	constructor(url:string, owner: string, repo: string) {
+		super(url, owner, repo);
 	}
-	
+
 	// took from example code in nodejs-file-downloader
 	// https://www.npmjs.com/package/nodejs-file-downloader?activeTab=readme#basic
 	private async download_file_content(url:string):Promise<string | null> {
@@ -93,13 +122,6 @@ export class GithubRepository extends Repository {
 	async get_issues():Promise<Issue[]> {
 		type IteratorResponseType = GetResponseTypeFromEndpointMethod<
 		typeof this.octokit.paginate.iterator>;
-		type IteratorResponseDataType = GetResponseDataTypeFromEndpointMethod<
-		typeof this.octokit.paginate.iterator>; 
-		
-		type ContentResponseType = GetResponseTypeFromEndpointMethod<
-		typeof this.octokit.rest.issues.listForRepo>;
-		type ContentResponseDataType = GetResponseDataTypeFromEndpointMethod<
-		typeof this.octokit.rest.issues.listForRepo>; 
 		
 		type EventsResponseType = GetResponseTypeFromEndpointMethod<
 		typeof this.octokit.rest.issues.listEvents>;
@@ -200,11 +222,86 @@ export class GithubRepository extends Repository {
 		});	
 	}     
 	
-	// @ANDY Will finish this ASAP!
-	async get_contributors_stats():Promise<string> {
+	async get_contributors_stats():Promise<Contributions> {
+		var contributors:Contributor[] = [];
+		type ContentResponseType = GetResponseTypeFromEndpointMethod<
+		typeof this.octokit.rest.repos.listContributors>;
+		type ContentResponseDataType = GetResponseDataTypeFromEndpointMethod<
+		typeof this.octokit.rest.repos.listContributors>;
+		var cdata:ContentResponseDataType|null = null;
+		var rv:Contributions;
+
+		try {
+			var content:ContentResponseType = await this.octokit.rest.repos.listContributors({
+			  owner: this.owner,
+			  repo: this.repo,
+			  anon: "false",
+			});
+			cdata = content.data;
+			logger.log('info', "Fetched contributors list from " + this.owner + "/" + this.repo);
+		} catch (error) {
+			logger.log('debug', "Could not fetch contributors list from " + this.owner + "/" + this.repo);
+		}
+
+		// this does not work for some reason - debug
+		// this is a workaround since we cannot seem to access object properties of cdata above
+		if (cdata != null) {
+			var jdata = JSON.parse(JSON.stringify(cdata));
+			for (const data of jdata) {
+				contributors.push(new Contributor(data.login, data.contributions));
+			}
+		}
+		
+		
+		// GRAPHQL CALLS
+		// get the string Date of 1 year ago
+		let set_date = new Date();
+		set_date.setMonth(set_date.getMonth() - 12);
+		var lastContributions:GraphQlQueryResponseData|null = null;
+		try {
+			lastContributions = await graphql({
+				query: `query ContributionsQuery($owner: String!, $repo: String!, $since: GitTimestamp!) {
+				  repository(owner: $owner, name: $repo) {
+				    object(expression: "master") {
+				      ... on Commit {
+				        history(since: $since) {
+				          totalCount
+				        }
+				      }
+				    }
+				    latestRelease {
+				      publishedAt
+				    }
+				    pushedAt
+				  }
+				}`,
+				owner: this.owner,
+				repo: this.repo,
+				since: set_date,
+				headers: {
+			    authorization: 'bearer ' + process.env.GITHUB_TOKEN,
+			  },
+			});
+		} catch (error) {
+			if (error instanceof GraphqlResponseError) {
+				logger.log('info', "GraphQL call failed: " + error.message);
+			}
+			else {
+				logger.log('info', "GraphQL call failed for reason unknown!");
+			}
+		}
+		
+		if (lastContributions != null) {
+			jdata = JSON.parse(JSON.stringify(lastContributions));
+			rv = new Contributions(jdata.repository.object.history.totalCount, jdata.repository.latestRelease.publishedAt,
+			jdata.repository.pushedAt, contributors);
+		}
+		else {
+			rv = new Contributions(null, null, null, contributors);
+		}
 
 		return new Promise((resolve) => {
-			resolve("");
+			resolve(rv);
 		});
 	}                                                                                                                          
  }                                                                                            

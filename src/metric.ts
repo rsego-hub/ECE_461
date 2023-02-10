@@ -1,5 +1,17 @@
 import { Repository } from "./repository"
-import { Issue } from "./github_repository"
+import { Issue, Contributor, Contributions } from "./github_repository"
+type NullNum = number|null;
+
+export class GroupMetric {
+	url:string;
+	metric_name:string;
+	metric_val:NullNum;
+	constructor(url:string, metric_name:string, metric_val:NullNum) {
+		this.url = url;
+		this.metric_name = metric_name;
+		this.metric_val = metric_val;
+	}
+}
 
 /* Metric Class
  * Abstract class to be extended for all current and future metric subclass
@@ -8,7 +20,7 @@ import { Issue } from "./github_repository"
  * License, BusFactor, RampUp, ResponsiveMaintainer, Correctness
 */
 export abstract class Metric {
-    abstract get_metric(repo: Repository):Promise<number>;
+    abstract get_metric(repo: Repository):Promise<GroupMetric>;
 }
 
 /* License Metric Class
@@ -19,23 +31,26 @@ export abstract class Metric {
  * and parse for regex MIT or LGPL v2.1 or lgpl-v2.1
 */
 export class LicenseMetric extends Metric {
-    async get_metric(repo: Repository):Promise<number> {
-
+    async get_metric(repo: Repository):Promise<GroupMetric> {
+		var final_score:number;
         var license: string|null = await repo.get_license(); // ask for license file
         if (license == null) {
             logger.log('info', "No license file, retreiving README");
             license = await repo.get_readme(); // ask for readme
             if (license == null) {
                 logger.log('info', "No license or readme found");
-                return 0
+                final_score = 0;
             }
         }
         
         let regex = new RegExp("(GNU\s*)?L?GPL\s*v?(?:2|3)|MIT\s*(L|l)icense");
-        if(regex.test(license)) {
-            return 1
+        if(regex.test(license as string)) {
+            final_score = 1;
         }
-        return 0
+        final_score = 0;
+        return new Promise((resolve) => {
+			resolve(new GroupMetric(repo.url, "LICENSE_SCORE", final_score));
+		});
     }
 }
 
@@ -92,3 +107,5 @@ export class ResponsiveMetric extends Metric {
         return 1/(1 + Math.exp(0.00000001*(-x) + 6));
     }
 }
+
+
