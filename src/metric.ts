@@ -59,7 +59,6 @@ export class LicenseMetric extends Metric {
  * @Robert TODO fix with new get_issues return value, make sure to error check
  * and log errors with logger.log('info', "message");
 */
-/*
 export class ResponsiveMetric extends Metric {
     async get_metric(repo: Repository):Promise<number> {
 
@@ -108,4 +107,5 @@ export class ResponsiveMetric extends Metric {
         return 1/(1 + Math.exp(0.00000001*(-x) + 6));
     }
 }
-*/
+
+
