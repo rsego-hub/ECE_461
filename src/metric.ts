@@ -32,9 +32,6 @@ export abstract class Metric {
 */
 export class LicenseMetric extends Metric {
     async get_metric(repo: Repository):Promise<GroupMetric> {
-		// remove PRIYANKA
-		// const conts:Contributions = await repo.get_contributors_stats();
-		// end removal
 		var final_score:number;
         var license: string|null = await repo.get_license(); // ask for license file
         if (license == null) {
