@@ -141,7 +141,9 @@ const getAllFiles = function(dirPath:string, arrayOfFiles:string[]) {
 		if (fs.statSync(dirPath + "/" + file).isDirectory()) {
 			arrayOfFiles = getAllFiles(dirPath + "/" + file, arrayOfFiles)
 		} else {
-			arrayOfFiles.push(path.join(__dirname, dirPath, "/", file));
+			if (file.endsWith(".js") || file.endsWith(".ts")) {
+				arrayOfFiles.push(path.join(dirPath, "/", file));
+			}
 		}
 	})
 	
@@ -151,15 +153,33 @@ const getAllFiles = function(dirPath:string, arrayOfFiles:string[]) {
 
 export class CorrectnessMetric extends Metric {
 	
-	private async get_eslint_on_clone(dir:string):Promise<LintResults> {
+	private async get_eslint_on_clone(dir:string[]):Promise<LintResults> {
 		var error_count:NullNum = null;
 		var fixable_error_count:NullNum = null;
 		var fatal_error_count:NullNum = null;
 		var file_count:NullNum = null;
 		var line_count:NullNum = null;
 		const eslint = new ESLint({
-			overrideConfigFile: "./.eslintrc.cjs",
-			errorOnUnmatchedPattern: true,
+			useEslintrc: false,
+			overrideConfig: {
+				root: true,
+				parser: "@typescript-eslint/parser",
+				"plugins": [
+					'@typescript-eslint',
+				],
+				extends: [
+				"eslint:recommended",
+				"plugin:@typescript-eslint/recommended",
+				],
+				"rules": {
+					// enable additional rules
+					"no-duplicate-imports": ["error", { "includeExports": true } ],
+					// disable rules from base configurations
+					"no-irregular-whitespace": "off",
+					"no-mixed-spaces-and-tabs": "off",
+					"indent": "off",
+				},
+			},
 			extensions: [".js", ".ts"]
 		});
 		//const results = await eslint.lintFiles(["src/**/*.ts"]);
@@ -213,12 +233,13 @@ export class CorrectnessMetric extends Metric {
 		var final_score:NullNum = null;
 		if (cloned_dir != null) {
 			// do clone work here
-			// const array_of_files = getAllFiles(cloned_dir,[]);
+			const array_of_files = getAllFiles(cloned_dir,[]);
 			// const array_of_files = getAllFiles('./local_clones/cloudinary_npmCorrectness',[]);
 			logger.log('info', "Get Correctness Metric");
-			// console.log(array_of_files);
-//			var lint_results:LintResults = await this.get_eslint_on_clone(cloned_dir);
-//			console.log(lint_results);
+			console.log(array_of_files);
+			var lint_results:LintResults = await this.get_eslint_on_clone(array_of_files);
+			console.log(cloned_dir);
+			console.log(lint_results);
 		}
 
 		// do your calculation

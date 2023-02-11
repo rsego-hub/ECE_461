@@ -93,14 +93,14 @@ export class GithubRepository extends Repository {
 		const url = this.cloning_url;
 		try {
 			await git.clone({ fs, http, dir, url: url, singleBranch:true, depth:1 })
-			.then(() => {
-				logger.log('info', "Done cloning! " + this.cloning_url);
-				rv = dir;
+			.catch((error) => {
+				logger.log('error',"error cloning catch! " + this.owner + " " + this.repo + " " + error);
 				return new Promise((resolve) => {
 					resolve(rv);
 				});
-			}).catch((error) => {
-				logger.log('error',"error cloning catch! " + this.owner + " " + this.repo + " " + error);
+			}).finally(() => {
+				logger.log('info', "Done cloning " + this.cloning_url);
+				rv = dir;
 				return new Promise((resolve) => {
 					resolve(rv);
 				});
