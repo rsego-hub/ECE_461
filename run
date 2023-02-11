@@ -21,7 +21,10 @@ elif [[ "$1" == "build" ]]; then
 elif [[ "$1" == "test" ]]; then
 	echo "Testing with jest"
 	source scripts/setup.sh
+	rm -rf coverage
+	npx jest --clearCache
 	npm run coverage
+	node build/tests/jest_coverage_reporter.js
 
 elif [[ -z "$1" ]]; then
 	echo "No URL_FILE argument provided!"

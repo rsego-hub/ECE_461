@@ -62,7 +62,7 @@ export class GithubRepository extends Repository {
   
 	constructor(url:string, owner: string, repo: string, cloning_url:string) {
 		super(url, owner, repo, cloning_url);
-		logger.log('debug', "Cloning URL in GithubRepository constructor: ", cloning_url);
+		logger.log('debug', "Cloning URL in GithubRepository constructor: " + cloning_url);
 	}
 
 	// took from example code in nodejs-file-downloader
@@ -74,12 +74,12 @@ export class GithubRepository extends Repository {
 		});
 		try {
 		  const {filePath,downloadStatus} = await downloader.download(); //Downloader.download() resolves with some useful properties.
-		    logger.log('debug', "All done" + filePath);	
+		    logger.log('debug', "All done " + filePath);	
 		    return filePath;
 		} catch (error) {
 		  //IMPORTANT: Handle a possible error. An error is thrown in case of network errors, or status codes of 400 and above.
 		  //Note that if the maxAttempts is set to higher than 1, the error is thrown only if all attempts fail.
-		  logger.log('debug', "Download failed", error);
+		  logger.log('debug', "Download failed " + error);
 		}
 		return null;
 	}
@@ -94,7 +94,7 @@ export class GithubRepository extends Repository {
 		try {
 			await git.clone({ fs, http, dir, url: url, singleBranch:true, depth:1 })
 			.then(() => {
-				logger.log('info', "Done cloning!", this.cloning_url);
+				logger.log('info', "Done cloning! " + this.cloning_url);
 				rv = dir;
 				return new Promise((resolve) => {
 					resolve(rv);
@@ -189,7 +189,6 @@ export class GithubRepository extends Repository {
 						var eventcdata:EventsResponseDataType = eventcontent.data;
 						var curr_issue = new Issue(issue.created_at, issue.updated_at, issue.closed_at, eventcdata.length);
 						rv.push(curr_issue);
-						logger.log('info', "Owner: %s, Repo: %s, Issue #%d: %s", this.owner, this.repo, issue.number, issue.title, );
 					}
 			  	}
 			}

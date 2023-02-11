@@ -29,7 +29,7 @@ const logger = localLogger.createLogger();
 global.logger = logger;
 
 describe('Top level test', () => {
-    test('Process URLS', async () => {
+    test('Process URLS valid', async () => {
 		function handle_results(metrics_array:GroupMetric[]) {
 			const json_arr = JSON.parse(`[
     {
@@ -136,5 +136,9 @@ describe('Top level test', () => {
 			expect(metrics_array).toStrictEqual(json_arr)
 		}
 		await process_urls("sample_url_file.txt", handle_results);
-    })
+    });
 })
+
+
+
+
