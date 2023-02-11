@@ -142,7 +142,7 @@ const getAllFiles = function(dirPath:string, arrayOfFiles:string[]) {
 
 export class CorrectnessMetric extends Metric {
 	
-	private async get_eslint_on_clone():Promise<LintResults> {
+	private async get_eslint_on_clone(dir:string):Promise<LintResults> {
 		var error_count:NullNum = null;
 		var fixable_error_count:NullNum = null;
 		var fatal_error_count:NullNum = null;
@@ -155,7 +155,7 @@ export class CorrectnessMetric extends Metric {
 		});
 		//const results = await eslint.lintFiles(["src/**/*.ts"]);
 		try {
-			let results = await eslint.lintFiles(["local_clones/cloudinary_npmCorrectness/lib/**/*.js"]);
+			let results = await eslint.lintFiles(dir);
 			// let results = await eslint.lintFiles(array_of_files);
 			var file_count_success:number = 0;
 			var error_count_success:number = 0;
@@ -208,8 +208,8 @@ export class CorrectnessMetric extends Metric {
 			// const array_of_files = getAllFiles('./local_clones/cloudinary_npmCorrectness',[]);
 			logger.log('info', "Get Correctness Metric");
 			// console.log(array_of_files);
-			//var lint_results:LintResults = await this.get_eslint_on_clone();
-			//console.log(lint_results);
+//			var lint_results:LintResults = await this.get_eslint_on_clone(cloned_dir);
+//			console.log(lint_results);
 		}
 
 		// do your calculation

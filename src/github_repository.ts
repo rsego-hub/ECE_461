@@ -1,3 +1,4 @@
+/* eslint-disable no-var */
 import { Octokit } from "octokit";
 import {
   GetResponseTypeFromEndpointMethod,
