@@ -14,5 +14,28 @@ describe('URL handling in main module, test', () => {
 		const owner_and_repo = await get_real_owner_and_repo(url_val);
 		expect(owner_and_repo).toEqual({url:"https://www.npmjs.com/package/express", 
 		owner:"expressjs", repo:"express", cloning_url:"https://github.com/expressjs/express.git"});
+
 	});
+	test('valid npm url with ssh git link', async () => {
+		const url_val = "https://www.npmjs.com/package/browserify";
+		const owner_and_repo = await get_real_owner_and_repo(url_val);
+		expect(owner_and_repo).toEqual({url:"https://www.npmjs.com/package/browserify", 
+		owner:"browserify", repo:"browserify", cloning_url:"https://github.com/browserify/browserify.git"});
+	});
+	test('invalid npm url', async () => {
+		const url_val = "https://www.npmjs.com/package/expressss";
+		const owner_and_repo = await get_real_owner_and_repo(url_val);
+		expect(owner_and_repo).toEqual(null);
+	});
+	test('invalid git url', async () => {
+		const url_val = "https://githubb.com/cloudinary/cloudinary_npm";
+		const owner_and_repo = await get_real_owner_and_repo(url_val);
+		expect(owner_and_repo).toEqual(null);
+	});
+	test('invalid url', async () => {
+		const url_val = ".com/cloudinary/cloudinary_npm";
+		const owner_and_repo = await get_real_owner_and_repo(url_val);
+		expect(owner_and_repo).toEqual(null);
+	});
+	
 });

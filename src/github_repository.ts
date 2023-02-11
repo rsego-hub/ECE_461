@@ -61,7 +61,7 @@ export class GithubRepository extends Repository {
   
 	constructor(url:string, owner: string, repo: string, cloning_url:string) {
 		super(url, owner, repo, cloning_url);
-		console.log(cloning_url);
+		logger.log('debug', "Cloning URL in GithubRepository constructor: ", cloning_url);
 	}
 
 	// took from example code in nodejs-file-downloader
@@ -93,19 +93,19 @@ export class GithubRepository extends Repository {
 		try {
 			await git.clone({ fs, http, dir, url: url, singleBranch:true, depth:1 })
 			.then(() => {
-				console.log("Done cloning!");
+				logger.log('info', "Done cloning!", this.cloning_url);
 				rv = dir;
 				return new Promise((resolve) => {
 					resolve(rv);
 				});
 			}).catch((error) => {
-				console.log("error cloning catch! " + this.owner + " " + this.repo + " " + error);
+				logger.log('error',"error cloning catch! " + this.owner + " " + this.repo + " " + error);
 				return new Promise((resolve) => {
 					resolve(rv);
 				});
 			});
 		} catch (error) {
-			console.log("error cloning! " + this.owner + " " + this.repo + " " + error);
+			logger.log('error', "error cloning! " + this.owner + " " + this.repo + " " + error);
 			return new Promise((resolve) => {
 				resolve(rv);
 			});

@@ -1,7 +1,7 @@
 
 import {describe, expect, test} from '@jest/globals';
-//import {Metric, LicenseMetric, ResponsiveMetric} from '../src/metric';
-import {GithubRepository} from '../src/github_repository';
+// import {Metric, LicenseMetric, ResponsiveMetric} from '../src/metric';
+// import {GithubRepository} from '../src/github_repository';
 /*
 describe('License Module', () => {
     // prelimnary tests, unrun due to relying on functionality not merged yet

@@ -41,11 +41,9 @@ export class LicenseMetric extends Metric {
 		var final_score:number;
         var license: string|null = await repo.get_license(); // ask for license file
         if (license == null) {
-			console.log("license null");
             logger.log('info', "No license file, retreiving README");
             license = await repo.get_readme(); // ask for readme
             if (license == null) {
-				console.log("readme null");
                 logger.log('info', "No license or readme found");
                 final_score = 0;
             }
@@ -208,10 +206,10 @@ export class CorrectnessMetric extends Metric {
 			// do clone work here
 			// const array_of_files = getAllFiles(cloned_dir,[]);
 			// const array_of_files = getAllFiles('./local_clones/cloudinary_npmCorrectness',[]);
-			console.log("in get_metric");
+			logger.log('info', "Get Correctness Metric");
 			// console.log(array_of_files);
-			var lint_results:LintResults = await this.get_eslint_on_clone();
-			console.log(lint_results);
+			//var lint_results:LintResults = await this.get_eslint_on_clone();
+			//console.log(lint_results);
 		}
 
 		// do your calculation

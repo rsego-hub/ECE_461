@@ -6,7 +6,7 @@
     "build": "tsc",
     "run": "ts-node src/index.ts",
     "test": "jest",
-    "coverage": "jest --coverage"
+    "coverage": "jest --coverage --detectOpenHandles"
   },
   "dependencies": {
     "@types/node": "^18.11.19",
