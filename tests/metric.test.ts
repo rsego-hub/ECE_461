@@ -1,5 +1,30 @@
-
 import {describe, expect, test} from '@jest/globals';
+
+const localLogger = {
+  format: {
+    printf: jest.fn(),
+    timestamp: jest.fn(),
+    simple: jest.fn(),
+    colorize: jest.fn(),
+    combine: jest.fn()
+  },
+  transports: {
+    Console: jest.fn(),
+    File: jest.fn()
+  },
+  createLogger: jest.fn().mockImplementation(function(creationOpts) {
+    return {
+      info: jest.fn(),
+      warn: jest.fn(),
+      error: jest.fn(),
+      log: jest.fn(),
+    };
+  })
+};
+
+const logger = localLogger.createLogger();
+global.logger = logger;
+
 // import {Metric, LicenseMetric, ResponsiveMetric} from '../src/metric';
 // import {GithubRepository} from '../src/github_repository';
 /*

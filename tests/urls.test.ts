@@ -2,6 +2,31 @@ import { describe, expect, test } from '@jest/globals';
 import { GithubRepository } from '../src/github_repository';
 import { get_real_owner_and_repo, OwnerAndRepo } from '../src/index'
 
+const localLogger = {
+  format: {
+    printf: jest.fn(),
+    timestamp: jest.fn(),
+    simple: jest.fn(),
+    colorize: jest.fn(),
+    combine: jest.fn()
+  },
+  transports: {
+    Console: jest.fn(),
+    File: jest.fn()
+  },
+  createLogger: jest.fn().mockImplementation(function(creationOpts) {
+    return {
+      info: jest.fn(),
+      warn: jest.fn(),
+      error: jest.fn(),
+      log: jest.fn(),
+    };
+  })
+};
+
+const logger = localLogger.createLogger();
+global.logger = logger;
+
 describe('URL handling in main module, test', () => {
 	test('valid github url', async () => {
 		const url_val = "https://github.com/cloudinary/cloudinary_npm";
