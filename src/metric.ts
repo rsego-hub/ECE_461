@@ -1,5 +1,8 @@
 import { Repository } from "./repository"
 import { Issue, Contributor, Contributions } from "./github_repository"
+import fs from "fs"
+import path from "path"
+
 type NullNum = number|null;
 
 export class GroupMetric {
@@ -35,9 +38,11 @@ export class LicenseMetric extends Metric {
 		var final_score:number;
         var license: string|null = await repo.get_license(); // ask for license file
         if (license == null) {
+			console.log("license null");
             logger.log('info', "No license file, retreiving README");
             license = await repo.get_readme(); // ask for readme
             if (license == null) {
+				console.log("readme null");
                 logger.log('info', "No license or readme found");
                 final_score = 0;
             }
@@ -54,11 +59,80 @@ export class LicenseMetric extends Metric {
     }
 }
 
+
+/* Ramp Up Metric Class
+	@RYAN: skeleton for how you will do your calls
+*/
+export class RampUpMetric extends Metric {
+    async get_metric(repo: Repository):Promise<GroupMetric> {
+		// returns a string filepath to the clone location (directory)
+		// or null if it failed
+		var cloned_dir:string|null = await repo.get_local_clone("RampUp");
+		var final_score:NullNum = null;
+
+		if (cloned_dir != null) {
+			// do clone work here
+		}
+
+		// do your calculation
+
+        return new Promise((resolve) => {
+			resolve(new GroupMetric(repo.url, "RAMP_UP_SCORE", final_score));
+		});
+    }
+}
+
+/* Bus Factor Metric Class
+	@ANDY skeleton for how you will do your calls
+*/
+export class BusFactorMetric extends Metric {
+    async get_metric(repo: Repository):Promise<GroupMetric> {
+		// returns a string filepath to the clone location (directory)
+		var contributions:Contributions = await repo.get_contributors_stats();
+		var final_score:NullNum = null;
+		
+		var contributors:Contributor[] = contributions.contributors;
+		var total_commits_1yr:NullNum = contributions.total_commits_1yr;
+		var last_pushed_date:string|null = contributions.last_pushed_date;
+		var last_release_date:string|null = contributions.last_release_date;
+		
+		// do null checking for every data point
+		// do an empty check for contributors.length == 0
+		
+
+		// do your calculation
+		// final_score = whatever;
+        return new Promise((resolve) => {
+			resolve(new GroupMetric(repo.url, "BUS_FACTOR_SCORE", final_score));
+		});
+    }
+}
+
+export class CorrectnessMetric extends Metric {
+    async get_metric(repo: Repository):Promise<GroupMetric> {
+		// returns a string filepath to the clone location (directory)
+		// or null if it failed
+		var cloned_dir:string|null = await repo.get_local_clone("Correctness");
+		var final_score:NullNum = null;
+
+		if (cloned_dir != null) {
+			// do clone work here
+		}
+
+		// do your calculation
+
+        return new Promise((resolve) => {
+			resolve(new GroupMetric(repo.url, "CORRECTNESS_SCORE", final_score));
+		});
+    }
+}
+
 /* Responsive Maintenance Metric Class
  * Get average amount of time before an issue or bug is resolved
  * @Robert TODO fix with new get_issues return value, make sure to error check
  * and log errors with logger.log('info', "message");
 */
+/*
 export class ResponsiveMetric extends Metric {
     async get_metric(repo: Repository):Promise<number> {
 
@@ -107,5 +181,5 @@ export class ResponsiveMetric extends Metric {
         return 1/(1 + Math.exp(0.00000001*(-x) + 6));
     }
 }
-
+*/
 

@@ -11,12 +11,16 @@ export abstract class Repository {
 	url:string;
 	owner: string; // for use in github APIs
 	repo: string; // for use in github APIs
-	constructor(url:string, owner:string, repo:string) {
+	cloning_url:string; // for use in cloning
+	constructor(url:string, owner:string, repo:string, cloning_url:string) {
 		this.url = url;
 		this.owner = owner;
 		this.repo = repo;
+		this.cloning_url = cloning_url;
 	}
-
+	
+	abstract get_local_clone(dirAppend:string):Promise<string | null>;
+	
 	/* get_license() function
 		returns license file spdx_id as string or null
 		a valid spdx-id will be lgpl-2.1 or MIT

@@ -6,9 +6,12 @@ import {
 import Downloader from "nodejs-file-downloader";
 import { graphql, GraphqlResponseError,  } from "@octokit/graphql"
 import type { GraphQlQueryResponseData } from "@octokit/graphql";
+import git from "isomorphic-git";
+import fs from "fs";
+import path from "path"
+import http from "isomorphic-git/http/node";
 
 import { Repository } from "./repository";
-import { cp } from "fs";
 
  /* Issue Class
  */
@@ -56,8 +59,9 @@ export class GithubRepository extends Repository {
     	auth: process.env.GITHUB_TOKEN,
 	});
   
-	constructor(url:string, owner: string, repo: string) {
-		super(url, owner, repo);
+	constructor(url:string, owner: string, repo: string, cloning_url:string) {
+		super(url, owner, repo, cloning_url);
+		console.log(cloning_url);
 	}
 
 	// took from example code in nodejs-file-downloader
@@ -79,6 +83,38 @@ export class GithubRepository extends Repository {
 		return null;
 	}
 	
+	async get_local_clone(dirAppend:string):Promise<string | null> {
+		var rv:string|null = null;
+		// const dir = path.join(process.cwd(), 'local_clones/' + this.owner + "_" + this.repo);
+		// remove local_clones/this.repo if it exists
+		const dir = path.join(process.cwd(), 'local_clones', this.repo + dirAppend);
+		fs.rmSync(dir, {recursive:true, force:true});
+		const url = this.cloning_url;
+		try {
+			await git.clone({ fs, http, dir, url: url, singleBranch:true, depth:1 })
+			.then(() => {
+				console.log("Done cloning!");
+				rv = dir;
+				return new Promise((resolve) => {
+					resolve(rv);
+				});
+			}).catch((error) => {
+				console.log("error cloning catch! " + this.owner + " " + this.repo + " " + error);
+				return new Promise((resolve) => {
+					resolve(rv);
+				});
+			});
+		} catch (error) {
+			console.log("error cloning! " + this.owner + " " + this.repo + " " + error);
+			return new Promise((resolve) => {
+				resolve(rv);
+			});
+		}
+		return new Promise((resolve) => {
+			resolve(rv);
+		});
+	}
+
 	// Must input pathname - if in main directory of repo, just put filename.
 	// For example, pathname arg could be README.md or README
 	async get_file_content(pathname: string):Promise<string | null> {
@@ -118,7 +154,6 @@ export class GithubRepository extends Repository {
 		});		
 	}
 	
-	// @ROBERT I am still working on this - will finish asap
 	async get_issues():Promise<Issue[]> {
 		type IteratorResponseType = GetResponseTypeFromEndpointMethod<
 		typeof this.octokit.paginate.iterator>;
@@ -136,19 +171,29 @@ export class GithubRepository extends Repository {
 		  per_page: 100,
 		});
 		// iterate through each response and error check null response
-		// MUST ERROR CHECK HERE @PRIYANKA
-		for await (const { data: issues } of iterator) {
-			for (const issue of issues) {
-				var eventcontent:EventsResponseType = await this.octokit.rest.issues.listEvents({
-					owner: this.owner,
-					repo: this.repo,
-					issue_number: issue.number
-				});
-				var eventcdata:EventsResponseDataType = eventcontent.data;
-				var curr_issue = new Issue(issue.created_at, issue.updated_at, issue.closed_at, eventcdata.length);
-				rv.push(curr_issue);
-				logger.log('info', "Owner: %s, Repo: %s, Issue #%d: %s", this.owner, this.repo, issue.number, issue.title, );
-		  	}
+		try {
+			for await (const { data: issues } of iterator) {
+				for (const issue of issues) {
+					var eventcontent:EventsResponseType|null = null;
+					try {
+						eventcontent = await this.octokit.rest.issues.listEvents({
+							owner: this.owner,
+							repo: this.repo,
+							issue_number: issue.number
+						});
+					} catch (error) {
+						logger.log('info', "Fetching issue failed 1x");
+					}
+					if (eventcontent != null) {
+						var eventcdata:EventsResponseDataType = eventcontent.data;
+						var curr_issue = new Issue(issue.created_at, issue.updated_at, issue.closed_at, eventcdata.length);
+						rv.push(curr_issue);
+						logger.log('info', "Owner: %s, Repo: %s, Issue #%d: %s", this.owner, this.repo, issue.number, issue.title, );
+					}
+			  	}
+			}
+		} catch (error) {
+			logger.log('info', "Fetching iterator of issues failed!");
 		}
 	
 		return new Promise((resolve) => {
