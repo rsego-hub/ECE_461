@@ -1,6 +1,5 @@
 import { Repository } from "./repository"
 import { Issue, Contributor, Contributions } from "./github_repository"
-
 import { ESLint } from "eslint";
 
 import fs from "fs"
@@ -37,22 +36,33 @@ export abstract class Metric {
 */
 export class LicenseMetric extends Metric {
     async get_metric(repo: Repository):Promise<GroupMetric> {
-		var final_score:number;
+		var final_score:number = 0;
+		let regex = new RegExp('((LGPL-2\.1)(\w+\b)?)|((LGPL-2\.0)(\w+\b)?)|((MIT)(\w+\b)?)');
         var license: string|null = await repo.get_license(); // ask for license file
         if (license == null) {
             logger.log('info', "No license file, retreiving README");
-            license = await repo.get_readme(); // ask for readme
-            if (license == null) {
+            const readme = await repo.get_readme(); // ask for readme
+            if (readme == null) {
                 logger.log('info', "No license or readme found");
                 final_score = 0;
             }
+            else {
+				fs.readFileSync(readme, 'utf-8').split(/\r?\n/).forEach(function(line){
+					const upper_line = line.toUpperCase();
+					if (regex.test(upper_line)) {
+						final_score = 1;
+					}
+				})
+			}
         }
-        
-        let regex = new RegExp("(GNU\s*)?L?GPL\s*v?(?:2|3)|MIT\s*(L|l)icense");
-        if(regex.test(license as string)) {
-            final_score = 1;
-        }
-        final_score = 0;
+        else {
+			//license spdx-id found
+			logger.log('info', "license found with spdx_id " + license);
+	        if(regex.test(license as string)) {
+	            final_score = 1;
+	        }
+		}
+
         return new Promise((resolve) => {
 			resolve(new GroupMetric(repo.url, "LICENSE_SCORE", final_score));
 		});
