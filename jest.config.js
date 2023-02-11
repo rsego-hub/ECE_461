@@ -8,5 +8,4 @@ module.exports = {
   coverageReporters: ['json-summary'],
   reporters: ['default', './build/tests/jest_reporter.js'],
 };
-// , , './build/tests/jest_coverage_reporter.js'
 // 'text', 'json', 'text-summary', 
