@@ -1,3 +1,4 @@
+/* eslint-disable no-var */
 import { createLogger, format, transports } from "winston";
 import { GroupMetric, Metric, LicenseMetric, RampUpMetric, BusFactorMetric, CorrectnessMetric } from "./metric"
 import { GithubRepository } from "./github_repository"
@@ -69,6 +70,7 @@ global.logger = logger;
 
 
 async function get_file_lines(filename:string):Promise<string[]> {
+	// error check open file
 	const file = await open(filename);
 	var rv:string[] = [];
 	for await (const line of file.readLines()) {
@@ -80,7 +82,7 @@ async function get_file_lines(filename:string):Promise<string[]> {
 	});
 }
 
-class OwnerAndRepo {
+export class OwnerAndRepo {
 	url:string;
 	owner:string;
 	repo:string;
@@ -93,11 +95,10 @@ class OwnerAndRepo {
 	}
 }
 
-async function fetch_npm_registry_data(registry_url:string):Promise<string[]> {
+export async function fetch_npm_registry_data(registry_url:string):Promise<string[]> {
 	var url_obj:URL;
 	var git_url:string
 	var owner_repo:string[] = [];
-	console.log("new link");
 	try {
 		url_obj = new URL(registry_url);
 	} catch(error) {
@@ -118,22 +119,19 @@ async function fetch_npm_registry_data(registry_url:string):Promise<string[]> {
 				url_obj = new URL(git_url);
 			} catch(error) {
 				// @Priyanka does this need to be changed?
-				logger.log('info', "Invalid repository url from npm registry!");
+				logger.log('error', "Invalid repository url from npm registry!");
 				return new Promise((reject) => {
 					reject(owner_repo);
 				});
 			}
 			var hostname:string = url_obj.host;
 			if (hostname != "github.com") {
-				logger.log('info', "Repository url from npm registry not on github!");
+				logger.log('error', "Repository url from npm registry not on github!");
 				return new Promise((reject) => {
 					reject(owner_repo);
 				});
 			}
-			console.log(git_url);
-			console.log(hostname);
 			var pathname:string = url_obj.pathname;
-			console.log(pathname);
 			if (pathname.startsWith("/")) {
 				pathname = pathname.slice(1);
 			}
@@ -147,37 +145,32 @@ async function fetch_npm_registry_data(registry_url:string):Promise<string[]> {
 			owner_repo.push(url_repo);
 			
 			var protocol:string = git_url.slice(0, git_url.indexOf(":"));
-			console.log(protocol);
 			// handle cloning url (form exactly like sample github urls)
 			if (protocol.startsWith("https")) {
-				console.log("good");
 				owner_repo.push(git_url);
 			}
 			else if (protocol.startsWith("git+https")) {
-				console.log("git+https");
 				// remove git+ from beginning
 				var new_url = git_url.slice(git_url.indexOf("+") + 1);
-				console.log(new_url); 
 				owner_repo.push(new_url);
 				// remove .git from end
 				// @priyanka come back if needed
 			}
 			else if (protocol.startsWith("git+ssh")) {
-				console.log("git+ssh");
 				// remove until :, replace with https:
 				var new_url = "https:" + git_url.slice(git_url.indexOf(":") + 1);
 				// remove git@
 				new_url = new_url.replace("git@", "");
-				console.log(new_url); 
 				owner_repo.push(new_url);
 			}
 			else {
-				console.log("invalid repo URL from npm registry");
+				logger.log('error', "invalid repo URL from npm registry ", registry_url);
 				return new Promise((reject) => {
 					reject(owner_repo);
 				});
 			}
 		} catch(error) {
+			logger.log('error', "Could not fetch repo URL from npm registry ", registry_url);
 			owner_repo = [];
 			return new Promise((reject) => {
 				reject(owner_repo);
@@ -189,13 +182,14 @@ async function fetch_npm_registry_data(registry_url:string):Promise<string[]> {
 	});
 }
 
-async function get_real_owner_and_repo(url_val:string):Promise<OwnerAndRepo|null> {
+export async function get_real_owner_and_repo(url_val:string):Promise<OwnerAndRepo|null> {
 	var url_obj:URL;
 	try {
 		url_obj = new URL(url_val);
 	} catch(error) {
 		// @Priyanka does this need to be changed?
-		throw "Invalid URL input!";
+		logger.log('info', "Invalid URL input!");
+		return null;
 	}
 
 	var host:string = url_obj.host;
@@ -210,7 +204,6 @@ async function get_real_owner_and_repo(url_val:string):Promise<OwnerAndRepo|null
 	}
 	else if (host == "www.npmjs.com") {
 		var package_name:string = pathname.slice(pathname.lastIndexOf("/"));
-		console.log(package_name);
 		var registry_url:string = "https://registry.npmjs.org" + package_name;
 		try {
 			var owner_and_repo:string[] = [];
@@ -220,7 +213,6 @@ async function get_real_owner_and_repo(url_val:string):Promise<OwnerAndRepo|null
 				return null;
 			}
 			if (owner_and_repo.length != 0) {
-				console.log(owner_and_repo[2]);
 				return new OwnerAndRepo(url_val, owner_and_repo[0], owner_and_repo[1], owner_and_repo[2]);
 			}
 		} catch (error) {
@@ -277,7 +269,11 @@ class MetricsCollection {
 // citation: typing union type arrays
 // https://stackoverflow.com/questions/62320779/typescript-how-to-type-an-array-of-number-or-null-elements-where-the-first-elem
 
-async function process_urls(filename:string) {
+interface calcResults {
+	(metrics_array:GroupMetric[]): void;
+}
+
+export async function process_urls(filename:string, callback:calcResults) {
 	var url_vals:string[] = await get_file_lines(filename);
 	var metrics_array:GroupMetric[]= [];
 	var owner_and_repo:OwnerAndRepo|null;
@@ -293,7 +289,7 @@ async function process_urls(filename:string) {
 			promises_of_metrics = promises_of_metrics.concat(tmp_promises);
 		}
 		else {
-			console.log("INVALID URL!");
+			logger.log('error',"Invalid URL!", url_val);
 			// @everyone add all metrics with null for bogus URLs
 			metrics_array.push(new GroupMetric(url_val, "LICENSE_SCORE", null),
 			new GroupMetric(url_val, "LICENSE_SCORE", null));
@@ -302,33 +298,43 @@ async function process_urls(filename:string) {
 	const allPromise = Promise.allSettled(promises_of_metrics);
 
 	allPromise.then((value) => {
-		console.log('Resolved:', value);
-		var jdata = JSON.parse(JSON.stringify(value));
+		logger.log('info', 'Resolved:', value);
+		const jdata = JSON.parse(JSON.stringify(value));
 		for (const result of jdata) {
 			switch(result.status) {
 				case 'fulfilled': {
+					logger.log('debug', 'success =>', result.value);
 					metrics_array.push(result.value);
 					break;
 				}
 				case 'rejected': {
-					console.log('error =>', result.reason);
+					logger.log('error', 'error =>', result.reason);
 					metrics_array.push(result.value);
 					break;
 				}
 			}
 		}
 	}).catch((error) => {
-		console.log('Rejected:', error);
+		logger.log('error', 'Rejected:', error);
 	}).finally(() => {
-		console.log('info', "Finished get_metrics for all repos");
-		console.log(metrics_array);
+		logger.log('info', "Finished get_metrics for all repos");
+		callback(metrics_array);
 		// map with keys as url with values for each metric
 		// calculate net score, sort by net score, print
 	});
 }
 
+function calc_final_result(metrics_array:GroupMetric[]):void {
+	console.log(JSON.stringify(metrics_array, null, 4));
+}
+
+export async function async_main() {
+	const filename:string = process.argv[2];
+	await process_urls(filename, calc_final_result);
+}
 
 // MAIN IS AND SHOULD BE JUST THIS, since process_urls is the "asynchronous main"
-const filename:string = process.argv[2];
-process_urls(filename);
+if (require.main === module) {
+	async_main();
+}
 

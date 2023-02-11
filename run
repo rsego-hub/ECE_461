@@ -10,8 +10,6 @@ if [[ "$1" == "install" ]]; then
 	npm install -g typescript --save-dev
 	echo "Installing ts-node"
 	npm install -g ts-node
-	echo "Installing ESLint"
-	npm install --save-dev eslint typescript @typescript-eslint/parser @typescript-eslint/eslint-plugin eslint-plugin-import@latest
 	echo "Installing all package.json dependencies"
 	npm install
 	

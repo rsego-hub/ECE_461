@@ -1,5 +1,8 @@
 import { Repository } from "./repository"
 import { Issue, Contributor, Contributions } from "./github_repository"
+
+import { ESLint } from "eslint";
+
 import fs from "fs"
 import path from "path"
 
@@ -38,11 +41,9 @@ export class LicenseMetric extends Metric {
 		var final_score:number;
         var license: string|null = await repo.get_license(); // ask for license file
         if (license == null) {
-			console.log("license null");
             logger.log('info', "No license file, retreiving README");
             license = await repo.get_readme(); // ask for readme
             if (license == null) {
-				console.log("readme null");
                 logger.log('info', "No license or readme found");
                 final_score = 0;
             }
@@ -108,15 +109,107 @@ export class BusFactorMetric extends Metric {
     }
 }
 
+class LintResults {
+	fileCount:NullNum;
+	lineCount:NullNum;
+	errorCount:NullNum;
+	fixableErrorCount:NullNum;
+	fatalErrorCount:NullNum;
+	constructor(fileCount:NullNum, lineCount:NullNum, errorCount:NullNum, fixableErrorCount:NullNum, fatalErrorCount:NullNum) {
+		this.fileCount = fileCount;
+		this.lineCount = lineCount;
+		this.errorCount = errorCount;
+		this.fixableErrorCount = fixableErrorCount;
+		this.fatalErrorCount = fatalErrorCount;
+	}
+}
+
+const getAllFiles = function(dirPath:string, arrayOfFiles:string[]) {
+	const files = fs.readdirSync(dirPath)
+	var arrayOfFiles = arrayOfFiles || []
+	
+	files.forEach(function(file) {
+		if (fs.statSync(dirPath + "/" + file).isDirectory()) {
+			arrayOfFiles = getAllFiles(dirPath + "/" + file, arrayOfFiles)
+		} else {
+			arrayOfFiles.push(path.join(__dirname, dirPath, "/", file));
+		}
+	})
+	
+	return arrayOfFiles
+}
+
+
 export class CorrectnessMetric extends Metric {
+	
+	private async get_eslint_on_clone():Promise<LintResults> {
+		var error_count:NullNum = null;
+		var fixable_error_count:NullNum = null;
+		var fatal_error_count:NullNum = null;
+		var file_count:NullNum = null;
+		var line_count:NullNum = null;
+		const eslint = new ESLint({
+			overrideConfigFile: "./.eslintrc.cjs",
+			errorOnUnmatchedPattern: true,
+			extensions: [".js", ".ts"]
+		});
+		//const results = await eslint.lintFiles(["src/**/*.ts"]);
+		try {
+			let results = await eslint.lintFiles(["local_clones/cloudinary_npmCorrectness/lib/**/*.js"]);
+			// let results = await eslint.lintFiles(array_of_files);
+			var file_count_success:number = 0;
+			var error_count_success:number = 0;
+			var fixable_error_count_success:number = 0;
+			var fatal_error_count_success:number = 0;
+			var line_count_success:NullNum = 0;
+			for (const result of results) {
+				console.log("result " + result.filePath);
+				console.log(result);
+				if (result.source != undefined) {
+					console.log("LINES");
+					console.log(result.source.split("\n").length - 1);
+					line_count_success += result.source.split("\n").length - 1;
+				}
+				else {
+					console.log ("SOURCE UNDEFINED");
+				}
+				file_count_success++;
+				error_count_success += result.errorCount;
+				fixable_error_count_success += result.fixableErrorCount;
+				fatal_error_count_success += result.fatalErrorCount;
+				console.log(result.errorCount);
+				console.log(result.fixableErrorCount);
+				console.log(result.fatalErrorCount)
+			}
+			if (line_count_success == 0) {
+				console.log("Could not find any source files to count lines eslint");
+				line_count_success = null;
+			}
+			return new Promise((resolve) => {
+				resolve(new LintResults(file_count_success, line_count_success, 
+				error_count_success, fixable_error_count_success, fatal_error_count_success))
+			});
+		} catch (error) {
+			console.log("error fetching eslint! " + error);
+			return new Promise((resolve) => {
+				resolve(new LintResults(file_count, line_count, error_count, fixable_error_count, fatal_error_count))
+			});
+		}
+	}
+	
     async get_metric(repo: Repository):Promise<GroupMetric> {
 		// returns a string filepath to the clone location (directory)
 		// or null if it failed
 		var cloned_dir:string|null = await repo.get_local_clone("Correctness");
 		var final_score:NullNum = null;
-
 		if (cloned_dir != null) {
 			// do clone work here
+			// const array_of_files = getAllFiles(cloned_dir,[]);
+			// const array_of_files = getAllFiles('./local_clones/cloudinary_npmCorrectness',[]);
+			logger.log('info', "Get Correctness Metric");
+			// console.log(array_of_files);
+			//var lint_results:LintResults = await this.get_eslint_on_clone();
+			//console.log(lint_results);
 		}
 
 		// do your calculation

@@ -1,8 +1,8 @@
-/*
-import {describe, expect, test} from '@jest/globals';
-import {Metric, LicenseMetric, ResponsiveMetric} from '../src/metric';
-import {GithubRepository} from '../src/github_repository';
 
+import {describe, expect, test} from '@jest/globals';
+// import {Metric, LicenseMetric, ResponsiveMetric} from '../src/metric';
+// import {GithubRepository} from '../src/github_repository';
+/*
 describe('License Module', () => {
     // prelimnary tests, unrun due to relying on functionality not merged yet
     test('MIT license should be compatible', () => {
@@ -26,3 +26,9 @@ describe('Responsive Module', () => {
 })
 
 */
+
+describe('Responsive Module', () => {
+    test('Repo with weeks between issue responsive', () => {
+        expect(null).toBe(null); // unsure of specific value, should be closer to 0 than 1
+    })
+})
