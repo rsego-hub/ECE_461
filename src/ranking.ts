@@ -2,8 +2,8 @@
 import { Repository } from "./repository"
 import { Metric } from "./metric"
 
-export class Ranking {
-    public display_ranking(repolist:Repository[]) {
+class Ranking {
+    public display_ranking(repolist: RepositoryList) {
         
         logger.log('debug', "Beginning repo map construction")
         var repo_score_map = new Map() // Initialize map
