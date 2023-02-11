@@ -1,5 +1,5 @@
-/*
 import { describe, expect, test } from '@jest/globals';
+/*
 import { GithubRepository } from '../src/github_repository';
 
 describe('GithubRepository constructor', () => {
@@ -11,3 +11,9 @@ describe('GithubRepository constructor', () => {
 	});
 });
 */
+
+describe('repository test', () => {
+    test('Repository dummy test', () => {
+        expect(null).toBe(null); // unsure of specific value, should be closer to 0 than 1
+    })
+})

@@ -68,7 +68,7 @@ const logger = createLogger({
 global.logger = logger;
 
 
-export async function get_file_lines(filename:string):Promise<string[]> {
+async function get_file_lines(filename:string):Promise<string[]> {
 	// error check open file
 	const file = await open(filename);
 	var rv:string[] = [];
@@ -330,6 +330,8 @@ export async function process_urls(filename:string) {
 
 
 // MAIN IS AND SHOULD BE JUST THIS, since process_urls is the "asynchronous main"
-const filename:string = process.argv[2];
-process_urls(filename);
+if (require.main === module) {
+	const filename:string = process.argv[2];
+	process_urls(filename);
+}
 
