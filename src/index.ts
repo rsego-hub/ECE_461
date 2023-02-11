@@ -46,29 +46,6 @@ function get_log_file():string {
 	}
 }
 
-// used example code from winston repo to set up:
-// https://github.com/winstonjs/winston#usage 
-const logger = createLogger({
-	level: get_log_level(),
-			format: format.combine(
-				format.timestamp({
-		format: 'YYYY-MM-DD HH:mm:ss'
-	}),
-	format.errors({ stack: true }),
-	format.splat(),
-	format.simple()
-			),
-			defaultMeta: { service: '461 Project 1' },
-			transports: [
-			             new transports.File({ filename: get_log_file(), level: get_log_level() })
-			             ]
-});
-
-// set the global variable logger to be this instance of a winston logger
-// so that all files can log using logger.log('level', "message");
-global.logger = logger;
-
-
 async function get_file_lines(filename:string):Promise<string[]> {
 	// error check open file
 	const file = await open(filename);
@@ -164,13 +141,13 @@ export async function fetch_npm_registry_data(registry_url:string):Promise<strin
 				owner_repo.push(new_url);
 			}
 			else {
-				logger.log('error', "invalid repo URL from npm registry ", registry_url);
+				logger.log('error', "invalid repo URL from npm registry " + registry_url);
 				return new Promise((reject) => {
 					reject(owner_repo);
 				});
 			}
 		} catch(error) {
-			logger.log('error', "Could not fetch repo URL from npm registry ", registry_url);
+			logger.log('error', "Could not fetch repo URL from npm registry " + registry_url);
 			owner_repo = [];
 			return new Promise((reject) => {
 				reject(owner_repo);
@@ -289,7 +266,7 @@ export async function process_urls(filename:string, callback:calcResults) {
 			promises_of_metrics = promises_of_metrics.concat(tmp_promises);
 		}
 		else {
-			logger.log('error',"Invalid URL!", url_val);
+			logger.log('error',"Invalid URL! " + url_val);
 			// @everyone add all metrics with null for bogus URLs
 			metrics_array.push(new GroupMetric(url_val, "LICENSE_SCORE", null),
 			new GroupMetric(url_val, "LICENSE_SCORE", null));
@@ -298,24 +275,24 @@ export async function process_urls(filename:string, callback:calcResults) {
 	const allPromise = Promise.allSettled(promises_of_metrics);
 
 	allPromise.then((value) => {
-		logger.log('info', 'Resolved:', value);
+		logger.log('info', 'Resolved: ' + value);
 		const jdata = JSON.parse(JSON.stringify(value));
 		for (const result of jdata) {
 			switch(result.status) {
 				case 'fulfilled': {
-					logger.log('debug', 'success =>', result.value);
+					logger.log('debug', 'success => ' + result.value);
 					metrics_array.push(result.value);
 					break;
 				}
 				case 'rejected': {
-					logger.log('error', 'error =>', result.reason);
+					logger.log('error', 'error => ' + result.reason);
 					metrics_array.push(result.value);
 					break;
 				}
 			}
 		}
 	}).catch((error) => {
-		logger.log('error', 'Rejected:', error);
+		logger.log('error', 'Rejected: ' + error);
 	}).finally(() => {
 		logger.log('info', "Finished get_metrics for all repos");
 		callback(metrics_array);
@@ -335,6 +312,27 @@ export async function async_main() {
 
 // MAIN IS AND SHOULD BE JUST THIS, since process_urls is the "asynchronous main"
 if (require.main === module) {
+	// used example code from winston repo to set up:
+	// https://github.com/winstonjs/winston#usage 
+	const logger = createLogger({
+		level: get_log_level(),
+				format: format.combine(
+					format.timestamp({
+			format: 'YYYY-MM-DD HH:mm:ss'
+		}),
+		format.errors({ stack: true }),
+		format.splat(),
+		format.simple()
+				),
+				defaultMeta: { service: '461 Project 1' },
+				transports: [
+				             new transports.File({ filename: get_log_file(), level: get_log_level() })
+				             ]
+	});
+	
+	// set the global variable logger to be this instance of a winston logger
+	// so that all files can log using logger.log('level', "message");
+	global.logger = logger;
 	async_main();
 }
 
