@@ -5,6 +5,7 @@ import { ESLint } from "eslint";
 
 import fs from "fs"
 import path from "path"
+import { BusFactor } from "../../../../Downloads/metric";
 
 type NullNum = number|null;
 
@@ -99,10 +100,38 @@ export class BusFactorMetric extends Metric {
 		
 		// do null checking for every data point
 		// do an empty check for contributors.length == 0
-		
+        if (!contributions || !contributions.total_commits_1yr || !contributions.contributors) {
+            return new Promise((resolve) => {
+                resolve(new GroupMetric(repo.url, "BUS_FACTOR_SCORE", 0));
+            });
+        }
+        if (contributions.contributors.length === 0) {
+            return new Promise((resolve) => {
+                resolve(new GroupMetric(repo.url, "BUS_FACTOR_SCORE", 0));
+            });
+        }
+        // sorts the contributors based on the amount of contributions
+        contributors.sort((a, b) => {
+            return b.total_contributions - a.total_contributions;
+        });
 
-		// do your calculation
+		// summs the amount of people who made contributions until
+        // half the total of commits of the year
+        // calculates the final score based on that value
+        // returns a value from 0 to 1. the larger value means that 
+        // the github repository is dependent on less people
+
+        let busfactor = 0
+        let commitsNeeded = contributions.total_commits_1yr / 2;  
+        for (const contributor of contributors){
+            commitsNeeded -= contributor.total_contributions;
+            busfactor += 1;
+            if (commitsNeeded <= 0) {                                          
+                break;
+            }
+        }
 		// final_score = whatever;
+        final_score = (1-(busfactor/contributions.contributors.length)*100)
         return new Promise((resolve) => {
 			resolve(new GroupMetric(repo.url, "BUS_FACTOR_SCORE", final_score));
 		});
