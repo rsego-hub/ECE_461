@@ -131,9 +131,10 @@ export class CorrectnessMetric extends Metric {
  * @Robert TODO fix with new get_issues return value, make sure to error check
  * and log errors with logger.log('info', "message");
 */
-/*
+
 export class ResponsiveMetric extends Metric {
-    async get_metric(repo: Repository):Promise<number> {
+    async get_metric(repo: Repository):Promise<GroupMetric> {
+        var final_score:NullNum = null;
 
         const issue_arr:Issue[] = await repo.get_issues(); // get all issues
 
@@ -141,11 +142,11 @@ export class ResponsiveMetric extends Metric {
         var num_events = 0;
 
         for (var issue of issue_arr) {
+
             if(issue.created_at == null) {
-                logger.log('info', "issue has no created date")
-                return -1
+                logger.log("info", "%Issue does not have creation date") // issue was never created, skip it
+                continue
             }
-            logger.log('debug', "created_at: %s", issue.created_at);
 
             if(issue.total_events == null || issue.total_events == 0) {
                 logger.log('info', "issue has no events")
@@ -153,8 +154,9 @@ export class ResponsiveMetric extends Metric {
             } else {
                 num_events += issue.total_events; // Add number of events to total count
             }
-            
+
             var created_time = new Date(issue.created_at).getTime() // Get time issue was created
+            
 
             if(issue.closed_at != null) {
                 tot_response_time += new Date(issue.closed_at).getTime() - created_time;
@@ -170,13 +172,17 @@ export class ResponsiveMetric extends Metric {
         // if there were no events, responsiveness is ambiguous, return medium value
         if(num_events == 0) {
             logger.log('info', 'No events in issue list');
-            return 0.5;
+            final_score = 0.5;
         }
 
         logger.log('debug', "Premodified score: %d", tot_response_time / num_events);
 
         // get avg response time, then score, round to 2 digits
-        return Math.round(this.sigmoid(tot_response_time / num_events) * 100); 
+        final_score = Math.round(this.sigmoid(tot_response_time / num_events) * 100); 
+
+        return new Promise((resolve) => {
+			resolve(new GroupMetric(repo.url, "RESPONSIVE_SCORE", final_score));
+		});
     }
 
     // Takes value in ms, numbers less than 1 hour are extremely close to 0
@@ -185,5 +191,3 @@ export class ResponsiveMetric extends Metric {
         return 1/(1 + Math.exp(0.00000001*(-x) + 6));
     }
 }
-*/
-
