@@ -68,7 +68,8 @@ const logger = createLogger({
 global.logger = logger;
 
 
-async function get_file_lines(filename:string):Promise<string[]> {
+export async function get_file_lines(filename:string):Promise<string[]> {
+	// error check open file
 	const file = await open(filename);
 	var rv:string[] = [];
 	for await (const line of file.readLines()) {
@@ -80,7 +81,7 @@ async function get_file_lines(filename:string):Promise<string[]> {
 	});
 }
 
-class OwnerAndRepo {
+export class OwnerAndRepo {
 	url:string;
 	owner:string;
 	repo:string;
@@ -93,7 +94,7 @@ class OwnerAndRepo {
 	}
 }
 
-async function fetch_npm_registry_data(registry_url:string):Promise<string[]> {
+export async function fetch_npm_registry_data(registry_url:string):Promise<string[]> {
 	var url_obj:URL;
 	var git_url:string
 	var owner_repo:string[] = [];
@@ -189,7 +190,7 @@ async function fetch_npm_registry_data(registry_url:string):Promise<string[]> {
 	});
 }
 
-async function get_real_owner_and_repo(url_val:string):Promise<OwnerAndRepo|null> {
+export async function get_real_owner_and_repo(url_val:string):Promise<OwnerAndRepo|null> {
 	var url_obj:URL;
 	try {
 		url_obj = new URL(url_val);
@@ -277,7 +278,7 @@ class MetricsCollection {
 // citation: typing union type arrays
 // https://stackoverflow.com/questions/62320779/typescript-how-to-type-an-array-of-number-or-null-elements-where-the-first-elem
 
-async function process_urls(filename:string) {
+export async function process_urls(filename:string) {
 	var url_vals:string[] = await get_file_lines(filename);
 	var metrics_array:GroupMetric[]= [];
 	var owner_and_repo:OwnerAndRepo|null;

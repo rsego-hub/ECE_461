@@ -126,7 +126,24 @@ class LintResults {
 	}
 }
 
+const getAllFiles = function(dirPath:string, arrayOfFiles:string[]) {
+	const files = fs.readdirSync(dirPath)
+	var arrayOfFiles = arrayOfFiles || []
+	
+	files.forEach(function(file) {
+		if (fs.statSync(dirPath + "/" + file).isDirectory()) {
+			arrayOfFiles = getAllFiles(dirPath + "/" + file, arrayOfFiles)
+		} else {
+			arrayOfFiles.push(path.join(__dirname, dirPath, "/", file));
+		}
+	})
+	
+	return arrayOfFiles
+}
+
+
 export class CorrectnessMetric extends Metric {
+	
 	private async get_eslint_on_clone():Promise<LintResults> {
 		var error_count:NullNum = null;
 		var fixable_error_count:NullNum = null;
@@ -134,13 +151,14 @@ export class CorrectnessMetric extends Metric {
 		var file_count:NullNum = null;
 		var line_count:NullNum = null;
 		const eslint = new ESLint({
-			useEslintrc: true,
-			errorOnUnmatchedPattern: false,
+			overrideConfigFile: "./.eslintrc.cjs",
+			errorOnUnmatchedPattern: true,
 			extensions: [".js", ".ts"]
 		});
 		//const results = await eslint.lintFiles(["src/**/*.ts"]);
 		try {
-			let results = await eslint.lintFiles(["src/**/*"]);
+			let results = await eslint.lintFiles(["local_clones/cloudinary_npmCorrectness/lib/**/*.js"]);
+			// let results = await eslint.lintFiles(array_of_files);
 			var file_count_success:number = 0;
 			var error_count_success:number = 0;
 			var fixable_error_count_success:number = 0;
@@ -188,6 +206,10 @@ export class CorrectnessMetric extends Metric {
 		var final_score:NullNum = null;
 		if (cloned_dir != null) {
 			// do clone work here
+			// const array_of_files = getAllFiles(cloned_dir,[]);
+			// const array_of_files = getAllFiles('./local_clones/cloudinary_npmCorrectness',[]);
+			console.log("in get_metric");
+			// console.log(array_of_files);
 			var lint_results:LintResults = await this.get_eslint_on_clone();
 			console.log(lint_results);
 		}
