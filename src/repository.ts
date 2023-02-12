@@ -30,7 +30,12 @@ export abstract class Repository {
 		MIT and LGPL in the readme in the license metric.
 	*/
     abstract get_license():Promise<string | null>;
+    
+    // Commenting out because unused - Responsive Maintainer task incomplete by Robert.
+    /*
     abstract get_issues():Promise<Issue[]>;
+    */
+   
 	/* get_readme() function
 		returns absolute filepath of downloaded readme in this project
 		make sure to error check for null string return.

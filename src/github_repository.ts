@@ -118,6 +118,8 @@ export class GithubRepository extends Repository {
 		});
 	}
 	
+	// Commenting out because unused - Responsive Maintainer task incomplete by Robert.
+	/*
 	async get_issues():Promise<Issue[]> {
 		type IteratorResponseType = GetResponseTypeFromEndpointMethod<
 		typeof this.octokit.paginate.iterator>;
@@ -163,7 +165,8 @@ export class GithubRepository extends Repository {
 			resolve(rv);
 		});
 	} 
-
+	*/
+	
 	async get_license():Promise<string | null> {
 		type ContentResponseType = GetResponseTypeFromEndpointMethod<
 		typeof this.octokit.rest.licenses.getForRepo>;
