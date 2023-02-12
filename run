@@ -5,7 +5,7 @@ if [[ "$1" == "install" ]]; then
 	echo "Checking for environment vars and setting up nvm dirs"
 	source scripts/setup.sh
 	echo "Installing node"
-	nvm install node
+	nvm install 18.14.0
 	echo "Installing typescript"
 	npm install -g typescript --save-dev
 	echo "Installing ts-node"
