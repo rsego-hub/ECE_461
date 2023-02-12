@@ -71,25 +71,127 @@ export class LicenseMetric extends Metric {
 
 
 /* Ramp Up Metric Class
-	@RYAN: skeleton for how you will do your calls
+ * Uses two sub scores to calc final metric score: The readme quality and the percentage of comments
+ * 
 */
 export class RampUpMetric extends Metric {
     async get_metric(repo: Repository):Promise<GroupMetric> {
-		// returns a string filepath to the clone location (directory)
-		// or null if it failed
-		// var cloned_dir:string|null = await repo.get_local_clone("RampUp");
-		var final_score:NullNum = null;
-		/*
-		if (cloned_dir != null) {
-			// do clone work here
-		}
+        let readmeScore:number =  0; // subscore for readme
+        let commentScore: number = 0; // subscore for comment ratio
+        let total_score: number = 0; //total ramp up score
+        read_me = await repo.get_readme(); //get the readme
+        let clonedRepo: string = repo.get_local_clone(); //get the clone
 
-		// do your calculation
-		*/
+        //read me calcs
+        if(read_me == null){
+            logger.log('info', "No Readme found");
+            readmeScore = 0;
+        }
+        else{
+            readmeScore = readmeCalc(read_me); //calc the readme score
+        }
+
+        //percent lines calc
+        if(clonedRepo == null){
+            logger.log('info', "No Clone found");
+            commentScore = 0;
+        }
+        else{
+            let percentLines: number = countCommentToSLOCRatioInRepo(clonedRepo);
+
+            if(percentLines > .5){
+                commentScore = .5
+            }
+            else if(percentLines > .35){
+                commentScore = .4
+            }
+             else if(percentLines > .25){
+                commentScore = .3
+            }
+             else if(percentLines > .15){
+                commentScore = .2
+            }
+            else if(percentLines > .5){
+                commentScore = .1
+            }
+            else{
+                commentScore = 0
+            }
+        }
+
+        total_score = readmeScore + commentScore;
+
         return new Promise((resolve) => {
-			resolve(new GroupMetric(repo.url, "RAMP_UP_SCORE", final_score));
-		});
+            resolve(new GroupMetric(repo.url, "RAMPUP_SCORE", total_score));
+        });
     }
+}
+
+//Function returns percent of code that is commented
+
+async function countCommentToSLOCRatioInRepo(repoName: string): Promise<number> {
+  return new Promise((resolve, reject) => {
+    try {
+      
+      // Change the working directory to the repository
+      process.chdir(`./${repoName}`);
+  
+      // Get a list of all files in the repository
+      const fileList = execSync(`find . -type f`).toString().split("\n").filter((file) => file.endsWith(".ts") || file.endsWith(".js"));
+
+      let totalComments = 0;
+      let totalSLOC = 0;
+  
+      // Iterate over the list of files
+      for (const file of fileList) {
+        const fileContent = fs.readFileSync(file, "utf-8");
+        const commentRegex = /\/\/.*|\/\*[\s\S]*?\*\//g;
+        const commentMatches = fileContent.match(commentRegex) || [];
+        totalComments += commentMatches.length;
+        totalSLOC += fileContent.split("\n").filter((line) => line.trim() !== "").length;
+      }
+  
+      resolve(totalComments / totalSLOC);
+    } catch (error) {
+      reject(error);
+    }
+  });
+}
+
+
+async function readmeCalc(filePath: string): Promise<number> {
+        let readmeScore: number =  0; // subscore for readme
+        const fileContent = fs.readFileSync(filePath, "utf-8");
+        //readmeScore calcs    
+        else{
+            let stringLength: number = fileContent.length;
+            //checks readme length and assigns a score based on its length
+            if (stringLength > 0) {
+                if(stringLength > 15000){
+                    readmeScore = .5;
+                }
+                else if(stringLength > 10000){
+                    readmeScore = .4;
+                }
+                else if(stringLength > 7500){
+                    readmeScore = .3;
+                }
+                else if(stringLength > 5000){
+                    readmeScore = .2;
+                }
+                else if(stringLength > 2500){
+                    readmeScore = .1;
+                }
+                else{
+                    readmeScore =.05;
+                }
+            }
+            else{  
+                readmeScore = 0;
+            }
+        }
+
+        return readmeScore;
 }
 
 /* Bus Factor Metric Class
