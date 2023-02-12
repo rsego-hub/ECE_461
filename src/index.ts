@@ -540,6 +540,10 @@ if (require.main === module) {
 	// set the global variable logger to be this instance of a winston logger
 	// so that all files can log using logger.log('level', "message");
 	global.logger = logger;
-	async_main();
+	try {
+		async_main();
+	} catch (error) {
+		process.exit(1);
+	}
 }
 
