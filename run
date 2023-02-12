@@ -31,10 +31,15 @@ elif [[ "$1" == "test" ]]; then
 elif [[ -z "$1" ]]; then
 	echo "No URL_FILE argument provided!"
 	exit 1
-
-else
+	
+elif [[ -e "$1" ]]; then
 	echo "Running with URL_FILE $1"
 	source scripts/setup.sh
 	node build/src/index.js $1
 	exit $?
+
+else
+	echo "No file exists $1"
+	exit 1
+
 fi
