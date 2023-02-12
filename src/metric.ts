@@ -4,7 +4,6 @@ import { ESLint } from "eslint";
 
 import fs from "fs"
 import path from "path"
-import { execSync } from "child_process";
 
 type NullNum = number|null;
 
@@ -204,45 +203,34 @@ export class BusFactorMetric extends Metric {
 		var contributions:Contributions = await repo.get_contributors_stats();
 		var final_score:NullNum = null;
 		
-		var contributors:Contributor[] = contributions.contributors;
-		var total_commits_1yr:NullNum = contributions.total_commits_1yr;
-		var last_pushed_date:string|null = contributions.last_pushed_date;
-		var last_release_date:string|null = contributions.last_release_date;
-		
 		// do null checking for every data point
 		// do an empty check for contributors.length == 0
-        if (!contributions || !contributions.total_commits_1yr || !contributions.contributors) {
+        if ((contributions == null) || (contributions.total_commits_1yr == null) || (contributions.total_commits_alltime == null)) {
+			logger.log('info', "null check fail in BusFactor" + repo.url);
             return new Promise((resolve) => {
                 resolve(new GroupMetric(repo.url, "BUS_FACTOR_SCORE", 0));
             });
         }
-        if (contributions.contributors.length === 0) {
-            return new Promise((resolve) => {
-                resolve(new GroupMetric(repo.url, "BUS_FACTOR_SCORE", 0));
-            });
-        }
-        // sorts the contributors based on the amount of contributions
-        contributors.sort((a, b) => {
-            return b.total_contributions - a.total_contributions;
-        });
-
-		// summs the amount of people who made contributions until
-        // half the total of commits of the year
-        // calculates the final score based on that value
-        // returns a value from 0 to 1. the larger value means that 
-        // the github repository is dependent on less people
-
-        let busfactor = 0
-        let commitsNeeded = contributions.total_commits_1yr / 2;  
-        for (const contributor of contributors){
-            commitsNeeded -= contributor.total_contributions;
-            busfactor += 1;
-            if (commitsNeeded <= 0) {                                          
-                break;
-            }
-        }
-		// final_score = whatever;
-        final_score = (1-(busfactor/contributions.contributors.length)*100)
+	   
+	   // Priyanka is fixing to something new that doesn't return negative values
+	   // ratio of commits in the last year compared to all time
+	   var ratio_commits = contributions.total_commits_1yr / contributions.total_commits_alltime;
+	   if (ratio_commits > 1) {
+		   // not possible most likely unless theres an error w/graphql fetches
+		   final_score = 0;
+	   }
+	   else if ((ratio_commits >= 0.1) && (ratio_commits <= 1)){
+		   final_score = (1 - ratio_commits);
+	   }
+	   else if ((ratio_commits >= 0.01) && (ratio_commits <= 0.1)) {
+		   final_score = 1 - (ratio_commits * 10);
+	   }
+	   else if ((ratio_commits >= 0.001) && (ratio_commits <= 0.01)) {
+		   final_score = (1 - (ratio_commits * 100));
+	   }
+	   else {
+		   final_score = 0;
+	   }
         return new Promise((resolve) => {
 			resolve(new GroupMetric(repo.url, "BUS_FACTOR_SCORE", final_score));
 		});
@@ -387,7 +375,6 @@ export class CorrectnessMetric extends Metric {
 				final_score = 0.5;
 			}
 		}
-		// do your calculation
 		// @PRIYANKA todo
 		// fix with .finally process instead of try/catch
 

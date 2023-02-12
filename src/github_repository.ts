@@ -42,11 +42,13 @@ export class Contributor {
 
 export class Contributions {
 	total_commits_1yr:number|null;
+	total_commits_alltime:number|null;
 	last_release_date:string|null;
 	last_pushed_date:string|null;
 	contributors:Contributor[];
-	constructor(total_commits_1yr:number|null, last_release_date:string|null, last_pushed_date:string|null, contributors:Contributor[]) {
+	constructor(total_commits_1yr:number|null, total_commits_alltime:number|null, last_release_date:string|null, last_pushed_date:string|null, contributors:Contributor[]) {
 		this.total_commits_1yr = total_commits_1yr;
+		this.total_commits_alltime = total_commits_alltime;
 		this.last_release_date = last_release_date;
 		this.last_pushed_date = last_pushed_date;
 		this.contributors = contributors;
@@ -303,6 +305,7 @@ export class GithubRepository extends Repository {
 		let set_date = new Date();
 		set_date.setMonth(set_date.getMonth() - 12);
 		var lastContributions:GraphQlQueryResponseData|null = null;
+		var allContributions:GraphQlQueryResponseData|null = null;
 		try {
 			lastContributions = await graphql({
 				query: `query ContributionsQuery($owner: String!, $repo: String!, $since: GitTimestamp!) {
@@ -327,22 +330,42 @@ export class GithubRepository extends Repository {
 			    authorization: 'bearer ' + process.env.GITHUB_TOKEN,
 			  },
 			});
+			allContributions = await graphql({
+				query: `query NewQuery($repo: String!, $owner: String!) {
+				  repository(owner: $owner, name: $repo) {
+				    object(expression: "master") {
+				      ... on Commit {
+				        history {
+				          totalCount
+				        }
+				      }
+				    }
+				  }
+				}`,
+				owner: this.owner,
+				repo: this.repo,
+				headers: {
+			    authorization: 'bearer ' + process.env.GITHUB_TOKEN,
+			  },
+			});
 		} catch (error) {
 			if (error instanceof GraphqlResponseError) {
-				logger.log('info', "GraphQL call failed: " + error.message);
+				logger.log('error', "GraphQL call failed: " + error.message);
 			}
 			else {
-				logger.log('info', "GraphQL call failed for reason unknown!");
+				logger.log('error', "GraphQL call failed for reason unknown!");
 			}
 		}
-		
-		if (lastContributions != null) {
-			jdata = JSON.parse(JSON.stringify(lastContributions));
-			rv = new Contributions(jdata.repository.object.history.totalCount, jdata.repository.latestRelease.publishedAt,
-			jdata.repository.pushedAt, contributors);
+		if ((lastContributions == null) || (allContributions == null)) {
+			logger.log('error', "GraphQL null check failed" + lastContributions + allContributions);
+			rv = new Contributions(null, null, null, null, contributors);
 		}
 		else {
-			rv = new Contributions(null, null, null, contributors);
+			jdata = JSON.parse(JSON.stringify(lastContributions));
+			var jdata2 = JSON.parse(JSON.stringify(allContributions));
+			rv = new Contributions(jdata.repository.object.history.totalCount, jdata2.repository.object.history.totalCount, jdata.repository.latestRelease.publishedAt,
+			jdata.repository.pushedAt, contributors);
+			logger.log('info', "Results of graphql needed for BusFactor 1yr: " + jdata.repository.object.history.totalCount + " alltime: " + jdata2.repository.object.history.totalCount);
 		}
 
 		return new Promise((resolve) => {

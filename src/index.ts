@@ -390,7 +390,7 @@ function get_weighted_sum(scores:ScoresWithoutNet):ScoresWithNet {
 	}
 	if (bus_factor_score_calc == null) {
 		bus_factor_score_calc = 0;
-		bus_factor_score_disp = -1;
+		bus_factor_score_disp = 0;
 	}
 	else {
 		bus_factor_score_disp = bus_factor_score_calc;
