@@ -7,6 +7,6 @@ module.exports = {
   "coverageProvider": 'v8',
   roots: ['./tests', './src'],
   coverageReporters: ['json-summary', 'text', 'html-spa', 'lcov'],
-  reporters: ['./build/tests/jest_reporter.js'],
+  reporters: ['default', './build/tests/jest_reporter.js'],
 };
 // 'text', 'json', 'text-summary', 

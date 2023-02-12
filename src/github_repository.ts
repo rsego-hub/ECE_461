@@ -117,45 +117,6 @@ export class GithubRepository extends Repository {
 			resolve(rv);
 		});
 	}
-
-	// Must input pathname - if in main directory of repo, just put filename.
-	// For example, pathname arg could be README.md or README
-	async get_file_content(pathname: string):Promise<string | null> {
-		type ContentResponseType = GetResponseTypeFromEndpointMethod<
-		typeof this.octokit.rest.repos.getContent>;
-		type ContentResponseDataType = GetResponseDataTypeFromEndpointMethod<
-		typeof this.octokit.rest.repos.getContent>; 
-		
-		var cdata:ContentResponseDataType;
-		var rv:string|null = null;
-		// uses octokit REST API to fetch file content
-		try {
-			var content:ContentResponseType = await this.octokit.rest.repos.getContent({
-			  owner: this.owner,
-			  repo: this.repo,
-			  path: pathname,
-			});
-			logger.log('info', "Fetched file " + pathname + " from " + this.owner + "/" + this.repo);
-			cdata = content.data;
-		} catch (error) {
-			logger.log('debug', "Could not fetch file " + pathname + " from " + this.owner + "/" + this.repo);
-			return new Promise((resolve) => {
-				resolve(rv);
-			});	
-		}
-		
-		// this does not work for some reason - debug
-		// this is a workaround since we cannot seem to access object properties of cdata above
-		var jdata = JSON.parse(JSON.stringify(cdata));
-		var download_url:string = jdata.download_url;
-		const downloaded_file:string|null = await this.download_file_content(download_url);		
-		if (downloaded_file == null) {
-			logger.log('info', "Could not resolve location of downloaded file");
-		}
-		return new Promise((resolve) => {
-			resolve(downloaded_file);
-		});		
-	}
 	
 	async get_issues():Promise<Issue[]> {
 		type IteratorResponseType = GetResponseTypeFromEndpointMethod<

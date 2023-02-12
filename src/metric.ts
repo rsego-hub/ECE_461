@@ -213,27 +213,31 @@ export class BusFactorMetric extends Metric {
         }
 	   
 	   // Priyanka is fixing to something new that doesn't return negative values
+	   // get length of contributors array to see total number of contributors
+	   var ratio_contributors_to_commits = contributions.contributors.length / contributions.total_commits_alltime;
 	   // ratio of commits in the last year compared to all time
+	   var ratio_commits_score = 0;
 	   var ratio_commits = contributions.total_commits_1yr / contributions.total_commits_alltime;
 	   if (ratio_commits > 1) {
 		   // not possible most likely unless theres an error w/graphql fetches
-		   final_score = 0;
+		   ratio_commits_score = 0;
 	   }
 	   // for ratios that are from .1 to 1 the resulting score will be from .4 to 1
 	   else if ((ratio_commits >= 0.1) && (ratio_commits <= 1)){
-		final_score = .4 + (.6* ratio_commits);
-		}
+		   ratio_commits_score = .4 + (.6* ratio_commits);
+	    }
 		// for ratios that are from .01 to .1 the resulting score will be from .2 to 4
 		else if ((ratio_commits >= 0.01) && (ratio_commits <= 0.1)) {
-			final_score = .2 + (.2 *ratio_commits * 10);
+			ratio_commits_score = .2 + (.2 *ratio_commits * 10);
 		}
 		// for ratios that are from .001 to .01 the resulting score will be from 0 to .2
 		else if ((ratio_commits >= 0.001) && (ratio_commits <= 0.01)) {
-			final_score = (.2 * (ratio_commits * 100));
+			ratio_commits_score = (.2 * (ratio_commits * 100));
 		}
 		else {
-			final_score = 0;
+			ratio_commits_score = 0;
 		}
+		final_score = (ratio_commits_score * 0.8) + (ratio_contributors_to_commits * 0.2);
         return new Promise((resolve) => {
 			resolve(new GroupMetric(repo.url, "BUS_FACTOR_SCORE", final_score));
 		});
@@ -269,7 +273,6 @@ const getAllFiles = function(dirPath:string, arrayOfFiles:string[]) {
 			}
 		}
 	})
-	
 	return arrayOfFiles
 }
 

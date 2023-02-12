@@ -1,7 +1,5 @@
 import { describe, expect, test } from '@jest/globals';
 import { GithubRepository } from '../src/github_repository';
-jest.useFakeTimers()
-
 
 const localLogger = {
   format: {

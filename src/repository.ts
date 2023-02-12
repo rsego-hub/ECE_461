@@ -31,12 +31,6 @@ export abstract class Repository {
 	*/
     abstract get_license():Promise<string | null>;
     abstract get_issues():Promise<Issue[]>;
-	/* get_file_content() function
-		input argument is name of requested file in the source repo
-		returns absolute filepath of downloaded requested file in this project
-		make sure to error check for null string return.
-	*/
-    abstract get_file_content(pathname: string):Promise<string | null>;
 	/* get_readme() function
 		returns absolute filepath of downloaded readme in this project
 		make sure to error check for null string return.
