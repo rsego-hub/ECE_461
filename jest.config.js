@@ -5,7 +5,7 @@ module.exports = {
   "collectCoverageFrom": ["./src/**"],
   "collectCoverage": true,
   roots: ['./tests', './src'],
-  coverageReporters: ['json-summary'],
-  reporters: ['default', './build/tests/jest_reporter.js'],
+  coverageReporters: ['json-summary', 'text', 'html-spa'],
+  reporters: ['./build/tests/jest_reporter.js'],
 };
 // 'text', 'json', 'text-summary', 

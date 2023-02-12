@@ -416,7 +416,7 @@ function get_weighted_sum(scores:ScoresWithoutNet):ScoresWithNet {
 }
 
 function calc_final_result(metrics_array:GroupMetric[]):void {
-	console.log(JSON.stringify(metrics_array, null, 4));
+	logger.log('info', "Metrics array of objects for each metric: \n" + JSON.stringify(metrics_array, null, 4));
 	var scores_map_with_net = new Map<string, ScoresWithNet>();
 	
 	for (var i = 0; i < metrics_array.length; i += 5) {
@@ -492,14 +492,14 @@ function calc_final_result(metrics_array:GroupMetric[]):void {
 		var net_score_obj:ScoresWithNet = get_weighted_sum(scores_without_net);
 		scores_map_with_net.set(url_val, net_score_obj);
 	}
-	console.log(scores_map_with_net);
+	logger.log('debug', "Scores map with net score \n" + scores_map_with_net);
 	var scores_map_only_net = new Map<string, number>();
 	scores_map_with_net.forEach((value, key, map) => {
 		scores_map_only_net.set(key, value.net_score);
 	});
-	console.log(scores_map_only_net);
+	logger.log('debug', "Scores map with only net score\n" + scores_map_only_net);
 	let sortedMap = new Map([...scores_map_only_net.entries()].sort((a, b) => b[1] - a[1]));
-	console.log(sortedMap);
+	logger.log('debug', "Scores map with only net score sorted \n" + sortedMap);
 	sortedMap.forEach((value, key, map) => {
 		const curr_url_scores = scores_map_with_net.get(key);
 		if (curr_url_scores != undefined) {

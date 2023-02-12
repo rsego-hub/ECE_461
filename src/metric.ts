@@ -302,10 +302,8 @@ export class CorrectnessMetric extends Metric {
 			},
 			extensions: [".js", ".ts"]
 		});
-		//const results = await eslint.lintFiles(["src/**/*.ts"]);
 		try {
 			let results = await eslint.lintFiles(dir);
-			// let results = await eslint.lintFiles(array_of_files);
 			var file_count_success:number = 0;
 			var error_count_success:number = 0;
 			var fixable_error_count_success:number = 0;
