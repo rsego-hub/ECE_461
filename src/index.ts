@@ -383,7 +383,7 @@ function get_weighted_sum(scores:ScoresWithoutNet):ScoresWithNet {
 	}
 	if (ramp_up_score_calc == null) {
 		ramp_up_score_calc = 0;
-		ramp_up_score_disp = -1;
+		ramp_up_score_disp = 0;
 	}
 	else {
 		ramp_up_score_disp = ramp_up_score_calc;

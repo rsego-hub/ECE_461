@@ -4,6 +4,7 @@ import { ESLint } from "eslint";
 
 import fs from "fs"
 import path from "path"
+import { execSync } from "child_process";
 
 type NullNum = number|null;
 
@@ -79,8 +80,8 @@ export class RampUpMetric extends Metric {
         let readmeScore:number =  0; // subscore for readme
         let commentScore: number = 0; // subscore for comment ratio
         let total_score: number = 0; //total ramp up score
-        read_me = await repo.get_readme(); //get the readme
-        let clonedRepo: string = repo.get_local_clone(); //get the clone
+        let read_me:string|null = await repo.get_readme(); //get the readme
+        let clonedRepo: string|null = await repo.get_local_clone("RampUp"); //get the clone
 
         //read me calcs
         if(read_me == null){
@@ -88,7 +89,7 @@ export class RampUpMetric extends Metric {
             readmeScore = 0;
         }
         else{
-            readmeScore = readmeCalc(read_me); //calc the readme score
+            readmeScore = await readmeCalc(read_me); //calc the readme score
         }
 
         //percent lines calc
@@ -97,7 +98,7 @@ export class RampUpMetric extends Metric {
             commentScore = 0;
         }
         else{
-            let percentLines: number = countCommentToSLOCRatioInRepo(clonedRepo);
+            let percentLines: number = await countCommentToSLOCRatioInRepo(clonedRepo);
 
             if(percentLines > .5){
                 commentScore = .5
@@ -120,9 +121,9 @@ export class RampUpMetric extends Metric {
         }
 
         total_score = readmeScore + commentScore;
-
+        logger.log('info', "Rampup score: " + total_score);
         return new Promise((resolve) => {
-            resolve(new GroupMetric(repo.url, "RAMPUP_SCORE", total_score));
+            resolve(new GroupMetric(repo.url, "RAMP_UP_SCORE", total_score));
         });
     }
 }
@@ -133,17 +134,13 @@ async function countCommentToSLOCRatioInRepo(repoName: string): Promise<number> 
   return new Promise((resolve, reject) => {
     try {
       
-      // Change the working directory to the repository
-      process.chdir(`./${repoName}`);
-  
       // Get a list of all files in the repository
-      const fileList = execSync(`find . -type f`).toString().split("\n").filter((file) => file.endsWith(".ts") || file.endsWith(".js"));
-
+      const array_of_files = getAllFiles(repoName,[]);
       let totalComments = 0;
       let totalSLOC = 0;
   
       // Iterate over the list of files
-      for (const file of fileList) {
+      for (const file of array_of_files) {
         const fileContent = fs.readFileSync(file, "utf-8");
         const commentRegex = /\/\/.*|\/\*[\s\S]*?\*\//g;
         const commentMatches = fileContent.match(commentRegex) || [];
@@ -153,6 +150,7 @@ async function countCommentToSLOCRatioInRepo(repoName: string): Promise<number> 
   
       resolve(totalComments / totalSLOC);
     } catch (error) {
+		logger.log('error',"reject error in count comments " + error);
       reject(error);
     }
   });
@@ -162,7 +160,10 @@ async function countCommentToSLOCRatioInRepo(repoName: string): Promise<number> 
 async function readmeCalc(filePath: string): Promise<number> {
         let readmeScore: number =  0; // subscore for readme
         const fileContent = fs.readFileSync(filePath, "utf-8");
-        //readmeScore calcs    
+        //readmeScore calcs
+        if (fileContent == null) {
+			readmeScore = 0;
+		}  
         else{
             let stringLength: number = fileContent.length;
             //checks readme length and assigns a score based on its length
@@ -190,7 +191,7 @@ async function readmeCalc(filePath: string): Promise<number> {
                 readmeScore = 0;
             }
         }
-
+        logger.log('info', "Rampup Readme score " + readmeScore);
         return readmeScore;
 }
 
@@ -346,7 +347,7 @@ export class CorrectnessMetric extends Metric {
 					});
 				}
 			} catch (error) {
-				console.log("Error calling ESLINT!");
+				logger.log('error', "Error calling ESLINT! " + error);
 				return new Promise((resolve) => {
 					resolve(new GroupMetric(repo.url, "CORRECTNESS_SCORE", final_score));
 				});
