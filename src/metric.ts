@@ -223,9 +223,8 @@ export class CorrectnessMetric extends Metric {
     async get_metric(repo: Repository):Promise<GroupMetric> {
 		// returns a string filepath to the clone location (directory)
 		// or null if it failed
-		// var cloned_dir:string|null = await repo.get_local_clone("Correctness");
-		var final_score:NullNum = null;
-		/*
+		var cloned_dir:string|null = await repo.get_local_clone("Correctness");
+		var final_score:NullNum = 0.25;
 		if (cloned_dir != null) {
 			// do clone work here
 			const array_of_files = getAllFiles(cloned_dir,[]);
@@ -250,9 +249,16 @@ export class CorrectnessMetric extends Metric {
 					resolve(new GroupMetric(repo.url, "CORRECTNESS_SCORE", final_score));
 				});
 			}
+			if ((lint_results.errorCount != null) && (lint_results.lineCount != null)) {
+				final_score = (1 - (lint_results.errorCount / lint_results.lineCount));
+			}
+			else {
+				final_score = 0.5;
+			}
 		}
-		*/
 		// do your calculation
+		// @PRIYANKA todo
+		// fix with .finally process instead of try/catch
 
         return new Promise((resolve) => {
 			resolve(new GroupMetric(repo.url, "CORRECTNESS_SCORE", final_score));

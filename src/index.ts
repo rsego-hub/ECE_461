@@ -341,10 +341,6 @@ class ScoresWithNet {
 	}
 }
 
-interface Pair {
-	[key:string]: number|string
-};
-
 class OutputObject {
 	URL:string;
 	NET_SCORE:number;
@@ -377,9 +373,10 @@ function get_weighted_sum(scores:ScoresWithoutNet):ScoresWithNet {
 	var correctness_score_disp:number;
 	var responsive_maintainer_score_disp:number;
 	
+	//@Priyanka change implemented metrics to display 0 , unimplemented -1
 	if (license_score_calc == null) {
 		license_score_calc = 0;
-		license_score_disp = -1;
+		license_score_disp = 0;
 	}
 	else {
 		license_score_disp = license_score_calc;
@@ -400,7 +397,7 @@ function get_weighted_sum(scores:ScoresWithoutNet):ScoresWithNet {
 	}
 	if (correctness_score_calc == null) {
 		correctness_score_calc = 0;
-		correctness_score_disp = -1;
+		correctness_score_disp = 0;
 	}
 	else {
 		correctness_score_disp = correctness_score_calc;
@@ -497,18 +494,8 @@ function calc_final_result(metrics_array:GroupMetric[]):void {
 	}
 	console.log(scores_map_with_net);
 	var scores_map_only_net = new Map<string, number>();
-	var i:number = 0.2;
-	var cnt:number = 1;
 	scores_map_with_net.forEach((value, key, map) => {
-		//scores_map_only_net.set(key, value.net_score);
-		scores_map_only_net.set(key, value.net_score + i);
-		if (cnt % 2 == 0) {
-			i += 1;
-		}
-		else {
-			i -= 0.25;
-		}
-		cnt++;
+		scores_map_only_net.set(key, value.net_score);
 	});
 	console.log(scores_map_only_net);
 	let sortedMap = new Map([...scores_map_only_net.entries()].sort((a, b) => b[1] - a[1]));
@@ -521,15 +508,6 @@ function calc_final_result(metrics_array:GroupMetric[]):void {
 			curr_url_scores.bus_factor_score, curr_url_scores.responsive_maintainer_score,
 			curr_url_scores.license_score);
 			console.log(JSON.stringify(output_object));
-			/*
-			test_output.push({URL:key, NET_SCORE:curr_url_scores.net_score,
-			LICENSE_SCORE: curr_url_scores.license_score, 
-			RAMP_UP_SCORE:curr_url_scores.ramp_up_score, 
-			BUS_FACTOR_SCORE:curr_url_scores.bus_factor_score,
-			CORRECTNESS_SCORE:curr_url_scores.correctness_score,
-			RESPONSIVE_MAINTAINER_SCORE:curr_url_scores.responsive_maintainer_score
-			});
-			*/
 		}
 	});
 }
