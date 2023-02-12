@@ -1,10 +1,10 @@
-/* eslint-disable no-var */
 import { createLogger, format, transports } from "winston";
-import { GroupMetric, Metric, LicenseMetric, RampUpMetric, BusFactorMetric, CorrectnessMetric } from "./metric"
+import { GroupMetric, Metric, LicenseMetric, RampUpMetric, BusFactorMetric, CorrectnessMetric, ResponsiveMetric } from "./metric"
 import { GithubRepository } from "./github_repository"
 import { Repository } from "./repository"
 
 import { open } from 'node:fs/promises';
+import fs from "fs"
 
 // read environment variable LOG_LEVEL to set up logging
 function get_log_level():string {
@@ -47,7 +47,7 @@ function get_log_file():string {
 }
 
 async function get_file_lines(filename:string):Promise<string[]> {
-	// error check open file
+	// @PRIYANKA error check open file
 	const file = await open(filename);
 	var rv:string[] = [];
 	for await (const line of file.readLines()) {
@@ -220,16 +220,17 @@ class MetricsCollection {
 	ramp_up_metric:RampUpMetric;
 	bus_factor_metric:BusFactorMetric;
 	correctness_metric: CorrectnessMetric;
-	//add more here as they are completed @everyone
-	
+	responsiveness_metric: ResponsiveMetric;
+		
 	constructor(owner_and_repo:OwnerAndRepo, license_metric:LicenseMetric, ramp_up_metric:RampUpMetric, 
-	bus_factor_metric:BusFactorMetric, correctness_metric:CorrectnessMetric) {
+	bus_factor_metric:BusFactorMetric, correctness_metric:CorrectnessMetric, responsiveness_metric:ResponsiveMetric) {
 		this.owner_and_repo = owner_and_repo;
 		this.git_repo = new GithubRepository(owner_and_repo.url, owner_and_repo.owner, owner_and_repo.repo, owner_and_repo.cloning_url);
 		this.license_metric = license_metric;
 		this.ramp_up_metric = ramp_up_metric;
 		this.bus_factor_metric = bus_factor_metric;
 		this.correctness_metric = correctness_metric;
+		this.responsiveness_metric = responsiveness_metric;
 	}
 
 	async get_metrics():Promise<Promise<GroupMetric>[]> {
@@ -238,6 +239,7 @@ class MetricsCollection {
 		promises_of_metrics[1] = this.ramp_up_metric.get_metric(this.git_repo);
 		promises_of_metrics[2] = this.bus_factor_metric.get_metric(this.git_repo);
 		promises_of_metrics[3] = this.correctness_metric.get_metric(this.git_repo);
+		promises_of_metrics[4] = this.responsiveness_metric.get_metric(this.git_repo);
 		// this.promises_of_metrics.push(this.<new_metric>.get_metric(this.git_repo));
 		return promises_of_metrics;
 	}
@@ -251,6 +253,7 @@ interface calcResults {
 }
 
 export async function process_urls(filename:string, callback:calcResults) {
+	// @Priyanka error check empty file
 	var url_vals:string[] = await get_file_lines(filename);
 	var metrics_array:GroupMetric[]= [];
 	var owner_and_repo:OwnerAndRepo|null;
@@ -261,7 +264,7 @@ export async function process_urls(filename:string, callback:calcResults) {
 		if (owner_and_repo != null) {
 			// var metrics_collection:MetricsCollection = new MetricsCollection(owner_and_repo, new LicenseMetric(), new <NewMetric()>...);
 			var metrics_collection:MetricsCollection = new MetricsCollection(owner_and_repo, new LicenseMetric(), 
-			new RampUpMetric(), new BusFactorMetric(), new CorrectnessMetric());
+			new RampUpMetric(), new BusFactorMetric(), new CorrectnessMetric(), new ResponsiveMetric());
 			var tmp_promises:Promise<GroupMetric>[] = await metrics_collection.get_metrics();
 			promises_of_metrics = promises_of_metrics.concat(tmp_promises);
 		}
@@ -269,7 +272,8 @@ export async function process_urls(filename:string, callback:calcResults) {
 			logger.log('error',"Invalid URL! " + url_val);
 			// @everyone add all metrics with null for bogus URLs
 			metrics_array.push(new GroupMetric(url_val, "LICENSE_SCORE", null),
-			new GroupMetric(url_val, "LICENSE_SCORE", null));
+			new GroupMetric(url_val, "RAMP_UP_SCORE", null), new GroupMetric(url_val, "BUS_FACTOR_SCORE", null),
+			new GroupMetric(url_val, "CORRECTNESS_SCORE", null), new GroupMetric(url_val, "RESPONSIVE_MAINTAINER_SCORE", null));
 		}
 	} 
 	const allPromise = Promise.allSettled(promises_of_metrics);
@@ -301,8 +305,233 @@ export async function process_urls(filename:string, callback:calcResults) {
 	});
 }
 
+type NullNum = number|null;
+
+class ScoresWithoutNet {
+	url:string|null;
+	license_score:NullNum;
+	ramp_up_score:NullNum;
+	bus_factor_score:NullNum;
+	correctness_score:NullNum;
+	responsive_maintainer_score:NullNum;
+	constructor(url:string|null, lc:NullNum, ru:NullNum, bf:NullNum, cs:NullNum, rm:NullNum) {
+		this.url = url;
+		this.license_score = lc;
+		this.ramp_up_score = ru;
+		this.bus_factor_score = bf;
+		this.correctness_score = cs;
+		this.responsive_maintainer_score = rm;
+	}
+}
+
+class ScoresWithNet {
+	license_score:number;
+	ramp_up_score:number;
+	bus_factor_score:number;
+	correctness_score:number;
+	responsive_maintainer_score:number;
+	net_score:number;
+	constructor(lc:number, ru:number, bf:number, cs:number, rm:number, ns:number) {
+		this.license_score = lc;
+		this.ramp_up_score = ru;
+		this.bus_factor_score = bf;
+		this.correctness_score = cs;
+		this.responsive_maintainer_score = rm;
+		this.net_score = ns;
+	}
+}
+
+interface Pair {
+	[key:string]: number|string
+};
+
+class OutputObject {
+	URL:string;
+	NET_SCORE:number;
+	RAMP_UP_SCORE:number;
+	CORRECTNESS_SCORE:number;
+	BUS_FACTOR_SCORE:number;
+	RESPONSIVE_MAINTAINER_SCORE:number;
+	LICENSE_SCORE:number;
+	constructor(url:string, ns:number, ru:number, cs:number, bf:number, rm:number, ls:number) {
+		this.URL = url;
+		this.LICENSE_SCORE = ls;
+		this.RAMP_UP_SCORE = ru;
+		this.BUS_FACTOR_SCORE = bf;
+		this.CORRECTNESS_SCORE = cs;
+		this.RESPONSIVE_MAINTAINER_SCORE = rm;
+		this.NET_SCORE = ns;
+	}
+}
+
+function get_weighted_sum(scores:ScoresWithoutNet):ScoresWithNet {
+	var net_score:number = 0;
+	var license_score_calc:NullNum = scores.license_score;
+	var ramp_up_score_calc:NullNum = scores.ramp_up_score;
+	var bus_factor_score_calc:NullNum = scores.bus_factor_score;
+	var correctness_score_calc:NullNum = scores.correctness_score;
+	var responsive_maintainer_score_calc:NullNum = scores.responsive_maintainer_score;
+	var license_score_disp:number;
+	var ramp_up_score_disp:number;
+	var bus_factor_score_disp:number;
+	var correctness_score_disp:number;
+	var responsive_maintainer_score_disp:number;
+	
+	if (license_score_calc == null) {
+		license_score_calc = 0;
+		license_score_disp = -1;
+	}
+	else {
+		license_score_disp = license_score_calc;
+	}
+	if (ramp_up_score_calc == null) {
+		ramp_up_score_calc = 0;
+		ramp_up_score_disp = -1;
+	}
+	else {
+		ramp_up_score_disp = ramp_up_score_calc;
+	}
+	if (bus_factor_score_calc == null) {
+		bus_factor_score_calc = 0;
+		bus_factor_score_disp = -1;
+	}
+	else {
+		bus_factor_score_disp = bus_factor_score_calc;
+	}
+	if (correctness_score_calc == null) {
+		correctness_score_calc = 0;
+		correctness_score_disp = -1;
+	}
+	else {
+		correctness_score_disp = correctness_score_calc;
+	}
+	if (responsive_maintainer_score_calc == null) {
+		responsive_maintainer_score_calc = 0;
+		responsive_maintainer_score_disp = -1;
+	}
+	else {
+		responsive_maintainer_score_disp = responsive_maintainer_score_calc;
+	}
+	net_score = license_score_calc * ((0.4 * bus_factor_score_calc) + (0.2 * ramp_up_score_calc) + 
+				(0.2 * correctness_score_calc) + (0.2 * responsive_maintainer_score_calc));
+	return new ScoresWithNet(license_score_disp, ramp_up_score_disp, bus_factor_score_disp, 
+							correctness_score_disp, responsive_maintainer_score_disp, net_score);
+}
+
 function calc_final_result(metrics_array:GroupMetric[]):void {
 	console.log(JSON.stringify(metrics_array, null, 4));
+	var scores_map_with_net = new Map<string, ScoresWithNet>();
+	
+	for (var i = 0; i < metrics_array.length; i += 5) {
+		var single_url_metrics:GroupMetric[] = metrics_array.slice(i, i+5);
+		var scores_without_net:ScoresWithoutNet = new ScoresWithoutNet(null, null, null, null, null, null);
+		var url_val:string = "";
+
+		for (var j = 0; j < single_url_metrics.length; j++) {
+
+			if ((i + j) >= metrics_array.length) {
+				break;
+			}
+			
+			if (single_url_metrics[j] == undefined) {
+				// do something
+				break;
+			}
+			else if (single_url_metrics[j] == null) {
+				// do something
+				break;
+			}
+			url_val = single_url_metrics[j].url;
+			scores_without_net.url = url_val;
+			switch (j) {
+				case(0):
+					// license score
+					if (single_url_metrics[j] == null) {
+						scores_without_net.license_score = null;
+					}
+					else {
+						scores_without_net.license_score = single_url_metrics[j].metric_val;
+					}
+					break;
+				case(1):
+					// ramp up score
+					if (single_url_metrics[j] == null) {
+						scores_without_net.ramp_up_score = null;
+					}
+					else {
+						scores_without_net.ramp_up_score = single_url_metrics[j].metric_val;
+					}
+					break;
+				case(2):
+					// bus factor score
+					if (single_url_metrics[j] == null) {
+						scores_without_net.bus_factor_score = null;
+					}
+					else {
+						scores_without_net.bus_factor_score = single_url_metrics[j].metric_val;
+					}
+					break;
+				case(3):
+					// correctness score
+					if (single_url_metrics[j] == null) {
+						scores_without_net.correctness_score = null;
+
+					}
+					else {
+						scores_without_net.correctness_score = single_url_metrics[j].metric_val;
+					}
+					break;
+				case(4):
+					// responsive score
+					if (single_url_metrics[j] == null) {
+						scores_without_net.responsive_maintainer_score = null;
+					}
+					else {
+						scores_without_net.responsive_maintainer_score = single_url_metrics[j].metric_val;
+					}
+					break;
+			}
+		}
+		var net_score_obj:ScoresWithNet = get_weighted_sum(scores_without_net);
+		scores_map_with_net.set(url_val, net_score_obj);
+	}
+	console.log(scores_map_with_net);
+	var scores_map_only_net = new Map<string, number>();
+	var i:number = 0.2;
+	var cnt:number = 1;
+	scores_map_with_net.forEach((value, key, map) => {
+		//scores_map_only_net.set(key, value.net_score);
+		scores_map_only_net.set(key, value.net_score + i);
+		if (cnt % 2 == 0) {
+			i += 1;
+		}
+		else {
+			i -= 0.25;
+		}
+		cnt++;
+	});
+	console.log(scores_map_only_net);
+	let sortedMap = new Map([...scores_map_only_net.entries()].sort((a, b) => b[1] - a[1]));
+	console.log(sortedMap);
+	sortedMap.forEach((value, key, map) => {
+		const curr_url_scores = scores_map_with_net.get(key);
+		if (curr_url_scores != undefined) {
+			var output_object:OutputObject = new OutputObject(key, curr_url_scores.net_score,
+			curr_url_scores.ramp_up_score, curr_url_scores.correctness_score,
+			curr_url_scores.bus_factor_score, curr_url_scores.responsive_maintainer_score,
+			curr_url_scores.license_score);
+			console.log(JSON.stringify(output_object));
+			/*
+			test_output.push({URL:key, NET_SCORE:curr_url_scores.net_score,
+			LICENSE_SCORE: curr_url_scores.license_score, 
+			RAMP_UP_SCORE:curr_url_scores.ramp_up_score, 
+			BUS_FACTOR_SCORE:curr_url_scores.bus_factor_score,
+			CORRECTNESS_SCORE:curr_url_scores.correctness_score,
+			RESPONSIVE_MAINTAINER_SCORE:curr_url_scores.responsive_maintainer_score
+			});
+			*/
+		}
+	});
 }
 
 export async function async_main() {
