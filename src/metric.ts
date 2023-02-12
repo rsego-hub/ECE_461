@@ -219,18 +219,21 @@ export class BusFactorMetric extends Metric {
 		   // not possible most likely unless theres an error w/graphql fetches
 		   final_score = 0;
 	   }
+	   // for ratios that are from .1 to 1 the resulting score will be from .4 to 1
 	   else if ((ratio_commits >= 0.1) && (ratio_commits <= 1)){
-		   final_score = (1 - ratio_commits);
-	   }
-	   else if ((ratio_commits >= 0.01) && (ratio_commits <= 0.1)) {
-		   final_score = 1 - (ratio_commits * 10);
-	   }
-	   else if ((ratio_commits >= 0.001) && (ratio_commits <= 0.01)) {
-		   final_score = (1 - (ratio_commits * 100));
-	   }
-	   else {
-		   final_score = 0;
-	   }
+		final_score = .4 + (.6* ratio_commits);
+		}
+		// for ratios that are from .01 to .1 the resulting score will be from .2 to 4
+		else if ((ratio_commits >= 0.01) && (ratio_commits <= 0.1)) {
+			final_score = .2 + (.2 *ratio_commits * 10);
+		}
+		// for ratios that are from .001 to .01 the resulting score will be from 0 to .2
+		else if ((ratio_commits >= 0.001) && (ratio_commits <= 0.01)) {
+			final_score = (.2 * (ratio_commits * 100));
+		}
+		else {
+			final_score = 0;
+		}
         return new Promise((resolve) => {
 			resolve(new GroupMetric(repo.url, "BUS_FACTOR_SCORE", final_score));
 		});
