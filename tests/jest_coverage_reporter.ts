@@ -12,3 +12,5 @@ const totalSum = ['lines']
   .reduce((a, b) => a + b, 0)
 const avgCoverage = totalSum
 console.log(`Coverage: ${avgCoverage.toFixed(2)}%`)
+console.log("\n\nCoverage number appears lower than real value, if you look in coverage/lcov-report/index.html");
+console.log("it shows code that definitely executes as not being covered. There is an open issue to chase this down.");
