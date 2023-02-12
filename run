@@ -22,8 +22,9 @@ elif [[ "$1" == "test" ]]; then
 	echo "Testing with jest"
 	source scripts/setup.sh
 	rm -rf coverage
+	mkdir coverage
 	npx jest --clearCache
-	npm run coverage
+	npm run coverage 2> coverage/err
 	node build/tests/jest_coverage_reporter.js
 
 elif [[ -z "$1" ]]; then

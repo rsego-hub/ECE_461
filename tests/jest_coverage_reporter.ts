@@ -7,8 +7,8 @@ import { join } from 'path';
 // Gitlab Regex: Total Coverage: (\d+\.\d+ \%)
 const coverage_file = join('../../coverage', 'coverage-summary.json');
 const coverage = require(coverage_file);
-const totalSum = ['lines', 'statements', 'functions', 'branches']
+const totalSum = ['lines']
   .map(i => coverage.total[i].pct)
   .reduce((a, b) => a + b, 0)
-const avgCoverage = totalSum / 4
+const avgCoverage = totalSum
 console.log(`Coverage: ${avgCoverage.toFixed(2)}%`)
