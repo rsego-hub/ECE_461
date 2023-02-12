@@ -437,19 +437,25 @@ export class ResponsiveMetric extends Metric {
             final_score = 0.5;
         }
 
-        logger.log('debug', "Premodified score: %d", tot_response_time / num_events);
-
         // get avg response time, then score, round to 2 digits
-        final_score = Math.round(this.sigmoid(tot_response_time / num_events) * 100); 
+        if(final_score == null) {
+            // get avg response time for repo Ex: originally in ms, the average response time for cloudbinary is 967.4 hours
+            logger.log('debug', "Premodified score: %d", tot_response_time / num_events);
+            logger.log("debug", "avg response time in h: %d", (tot_response_time/num_events/ 3600000));
+
+            // round final score calc Ex: That will result in a score so low it rounds to 0
+            final_score = Math.round(this.sigmoid(tot_response_time / num_events / 3600000)*100)/100; 
+        }
         */
         return new Promise((resolve) => {
 			resolve(new GroupMetric(repo.url, "RESPONSIVE_SCORE", final_score));
 		});
     }
-
+    /*
     // Takes value in ms, numbers less than 1 hour are extremely close to 0
     // numbers greater than 1 week are extremely close to 1
     sigmoid(x: number) {
-        return 1/(1 + Math.exp(0.00000001*(-x) + 6));
+        return (-1/(1 + Math.exp(0.04*(-x+168)))+1);
     }
+    */
 }
