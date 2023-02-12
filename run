@@ -5,9 +5,10 @@ if [[ "$1" == "install" ]]; then
 	echo "Checking for environment vars and setting up nvm dirs"
 	source scripts/setup.sh
 	echo "Installing node"
-	nvm install node
+	nvm install 18.14.0
+	npm install -g npm@9.4.2
 	echo "Installing typescript"
-	npm install -g typescript --save-dev
+	npm install -g jest typescript ts-jest @types/jest ts-node --save-dev
 	echo "Installing ts-node"
 	npm install -g ts-node
 	echo "Installing all package.json dependencies"
