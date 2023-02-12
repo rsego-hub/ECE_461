@@ -1,8 +1,5 @@
 import { describe, expect, test } from '@jest/globals';
-import { GithubRepository } from '../src/github_repository';
 import { get_real_owner_and_repo, OwnerAndRepo } from '../src/index'
-jest.useFakeTimers()
-
 
 const localLogger = {
   format: {
@@ -64,6 +61,5 @@ describe('URL handling in main module, test', () => {
 		const owner_and_repo = await get_real_owner_and_repo(url_val);
 		expect(owner_and_repo).toEqual(null);
 	});
-	
 });
 

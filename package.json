@@ -6,7 +6,7 @@
     "build": "tsc",
     "run": "ts-node src/index.ts",
     "test": "jest",
-    "coverage": "jest --coverage --detectOpenHandles"
+    "coverage": "jest --coverage --verbose=true --silent=false --runInBand --testTimeout=60000"
   },
   "dependencies": {
     "@types/node": "^18.11.19",

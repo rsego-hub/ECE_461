@@ -47,7 +47,6 @@ function get_log_file():string {
 }
 
 async function get_file_lines(filename:string):Promise<string[]> {
-	// @PRIYANKA error check open file
 	const file = await open(filename);
 	var rv:string[] = [];
 	for await (const line of file.readLines()) {
@@ -79,7 +78,6 @@ export async function fetch_npm_registry_data(registry_url:string):Promise<strin
 	try {
 		url_obj = new URL(registry_url);
 	} catch(error) {
-		// @Priyanka does this need to be changed?
 		logger.log('info', "Invalid registry URL input!");
 		return new Promise((reject) => {
 			reject(owner_repo);
@@ -95,7 +93,6 @@ export async function fetch_npm_registry_data(registry_url:string):Promise<strin
 			try {
 				url_obj = new URL(git_url);
 			} catch(error) {
-				// @Priyanka does this need to be changed?
 				logger.log('error', "Invalid repository url from npm registry!");
 				return new Promise((reject) => {
 					reject(owner_repo);
@@ -131,7 +128,6 @@ export async function fetch_npm_registry_data(registry_url:string):Promise<strin
 				var new_url = git_url.slice(git_url.indexOf("+") + 1);
 				owner_repo.push(new_url);
 				// remove .git from end
-				// @priyanka come back if needed
 			}
 			else if (protocol.startsWith("git+ssh")) {
 				// remove until :, replace with https:
@@ -164,7 +160,6 @@ export async function get_real_owner_and_repo(url_val:string):Promise<OwnerAndRe
 	try {
 		url_obj = new URL(url_val);
 	} catch(error) {
-		// @Priyanka does this need to be changed?
 		logger.log('info', "Invalid URL input!");
 		return null;
 	}
@@ -201,17 +196,6 @@ export async function get_real_owner_and_repo(url_val:string):Promise<OwnerAndRe
 		return null;
 	}
 }
-
-/*
-class EachPackageMetrics {
-	owner_and_repo:OwnerAndRepo;
-	scores:NulNum[];
-	constructor(owner_and_repo:OwnerAndRepo, scores:NulNum[]) {
-		this.owner_and_repo = owner_and_repo;
-		this.scores = scores;
-	}
-}
-*/
 
 class MetricsCollection {
 	owner_and_repo:OwnerAndRepo;
@@ -253,7 +237,6 @@ interface calcResults {
 }
 
 export async function process_urls(filename:string, callback:calcResults) {
-	// @Priyanka error check empty file
 	var url_vals:string[] = await get_file_lines(filename);
 	var metrics_array:GroupMetric[]= [];
 	var owner_and_repo:OwnerAndRepo|null;
@@ -307,7 +290,7 @@ export async function process_urls(filename:string, callback:calcResults) {
 
 type NullNum = number|null;
 
-class ScoresWithoutNet {
+export class ScoresWithoutNet {
 	url:string|null;
 	license_score:NullNum;
 	ramp_up_score:NullNum;
@@ -324,7 +307,7 @@ class ScoresWithoutNet {
 	}
 }
 
-class ScoresWithNet {
+export class ScoresWithNet {
 	license_score:number;
 	ramp_up_score:number;
 	bus_factor_score:number;
@@ -360,7 +343,7 @@ class OutputObject {
 	}
 }
 
-function get_weighted_sum(scores:ScoresWithoutNet):ScoresWithNet {
+export function get_weighted_sum(scores:ScoresWithoutNet):ScoresWithNet {
 	var net_score:number = 0;
 	var license_score_calc:NullNum = scores.license_score;
 	var ramp_up_score_calc:NullNum = scores.ramp_up_score;
@@ -416,7 +399,7 @@ function get_weighted_sum(scores:ScoresWithoutNet):ScoresWithNet {
 }
 
 function calc_final_result(metrics_array:GroupMetric[]):void {
-	logger.log('info', "Metrics array of objects for each metric: \n" + JSON.stringify(metrics_array, null, 4));
+	logger.log('info', "\nMetrics array of objects for each metric: \n" + JSON.stringify(metrics_array, null, 4));
 	var scores_map_with_net = new Map<string, ScoresWithNet>();
 	
 	for (var i = 0; i < metrics_array.length; i += 5) {
