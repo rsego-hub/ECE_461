@@ -1,6 +1,5 @@
 import { Repository } from "./repository"
 import { Issue, Contributor, Contributions } from "./github_repository"
-
 import { ESLint } from "eslint";
 
 import fs from "fs"
@@ -37,22 +36,33 @@ export abstract class Metric {
 */
 export class LicenseMetric extends Metric {
     async get_metric(repo: Repository):Promise<GroupMetric> {
-		var final_score:number;
+		var final_score:number = 0;
+		let regex = new RegExp('((LGPL-2\.1)(\w+\b)?)|((LGPL-2\.0)(\w+\b)?)|((MIT)(\w+\b)?)');
         var license: string|null = await repo.get_license(); // ask for license file
         if (license == null) {
             logger.log('info', "No license file, retreiving README");
-            license = await repo.get_readme(); // ask for readme
-            if (license == null) {
+            const readme = await repo.get_readme(); // ask for readme
+            if (readme == null) {
                 logger.log('info', "No license or readme found");
                 final_score = 0;
             }
+            else {
+				fs.readFileSync(readme, 'utf-8').split(/\r?\n/).forEach(function(line){
+					const upper_line = line.toUpperCase();
+					if (regex.test(upper_line)) {
+						final_score = 1;
+					}
+				})
+			}
         }
-        
-        let regex = new RegExp("(GNU\s*)?L?GPL\s*v?(?:2|3)|MIT\s*(L|l)icense");
-        if(regex.test(license as string)) {
-            final_score = 1;
-        }
-        final_score = 0;
+        else {
+			//license spdx-id found
+			logger.log('info', "license found with spdx_id " + license);
+	        if(regex.test(license as string)) {
+	            final_score = 1;
+	        }
+		}
+
         return new Promise((resolve) => {
 			resolve(new GroupMetric(repo.url, "LICENSE_SCORE", final_score));
 		});
@@ -61,25 +71,127 @@ export class LicenseMetric extends Metric {
 
 
 /* Ramp Up Metric Class
-	@RYAN: skeleton for how you will do your calls
+ * Uses two sub scores to calc final metric score: The readme quality and the percentage of comments
+ * 
 */
 export class RampUpMetric extends Metric {
     async get_metric(repo: Repository):Promise<GroupMetric> {
-		// returns a string filepath to the clone location (directory)
-		// or null if it failed
-		var cloned_dir:string|null = await repo.get_local_clone("RampUp");
-		var final_score:NullNum = null;
+        let readmeScore:number =  0; // subscore for readme
+        let commentScore: number = 0; // subscore for comment ratio
+        let total_score: number = 0; //total ramp up score
+        let read_me:string|null = await repo.get_readme(); //get the readme
+        let clonedRepo: string|null = await repo.get_local_clone("RampUp"); //get the clone
 
-		if (cloned_dir != null) {
-			// do clone work here
-		}
+        //read me calcs
+        if(read_me == null){
+            logger.log('info', "No Readme found");
+            readmeScore = 0;
+        }
+        else{
+            readmeScore = await readmeCalc(read_me); //calc the readme score
+        }
 
-		// do your calculation
+        //percent lines calc
+        if(clonedRepo == null){
+            logger.log('info', "No Clone found");
+            commentScore = 0;
+        }
+        else{
+            let percentLines: number = await countCommentToSLOCRatioInRepo(clonedRepo);
 
+            if(percentLines > .5){
+                commentScore = .5
+            }
+            else if(percentLines > .35){
+                commentScore = .4
+            }
+             else if(percentLines > .25){
+                commentScore = .3
+            }
+             else if(percentLines > .15){
+                commentScore = .2
+            }
+            else if(percentLines > .5){
+                commentScore = .1
+            }
+            else{
+                commentScore = 0
+            }
+        }
+
+        total_score = readmeScore + commentScore;
+        logger.log('info', "Rampup score: " + total_score);
         return new Promise((resolve) => {
-			resolve(new GroupMetric(repo.url, "RAMP_UP_SCORE", final_score));
-		});
+            resolve(new GroupMetric(repo.url, "RAMP_UP_SCORE", total_score));
+        });
     }
+}
+
+//Function returns percent of code that is commented
+
+async function countCommentToSLOCRatioInRepo(repoName: string): Promise<number> {
+  return new Promise((resolve, reject) => {
+    try {
+      
+      // Get a list of all files in the repository
+      const array_of_files = getAllFiles(repoName,[]);
+      let totalComments = 0;
+      let totalSLOC = 0;
+  
+      // Iterate over the list of files
+      for (const file of array_of_files) {
+        const fileContent = fs.readFileSync(file, "utf-8");
+        const commentRegex = /\/\/.*|\/\*[\s\S]*?\*\//g;
+        const commentMatches = fileContent.match(commentRegex) || [];
+        totalComments += commentMatches.length;
+        totalSLOC += fileContent.split("\n").filter((line) => line.trim() !== "").length;
+      }
+  
+      resolve(totalComments / totalSLOC);
+    } catch (error) {
+		logger.log('error',"reject error in count comments " + error);
+      reject(error);
+    }
+  });
+}
+
+
+async function readmeCalc(filePath: string): Promise<number> {
+        let readmeScore: number =  0; // subscore for readme
+        const fileContent = fs.readFileSync(filePath, "utf-8");
+        //readmeScore calcs
+        if (fileContent == null) {
+			readmeScore = 0;
+		}  
+        else{
+            let stringLength: number = fileContent.length;
+            //checks readme length and assigns a score based on its length
+            if (stringLength > 0) {
+                if(stringLength > 15000){
+                    readmeScore = .5;
+                }
+                else if(stringLength > 10000){
+                    readmeScore = .4;
+                }
+                else if(stringLength > 7500){
+                    readmeScore = .3;
+                }
+                else if(stringLength > 5000){
+                    readmeScore = .2;
+                }
+                else if(stringLength > 2500){
+                    readmeScore = .1;
+                }
+                else{
+                    readmeScore =.05;
+                }
+            }
+            else{  
+                readmeScore = 0;
+            }
+        }
+        logger.log('info', "Rampup Readme score " + readmeScore);
+        return readmeScore;
 }
 
 /* Bus Factor Metric Class
@@ -91,17 +203,34 @@ export class BusFactorMetric extends Metric {
 		var contributions:Contributions = await repo.get_contributors_stats();
 		var final_score:NullNum = null;
 		
-		var contributors:Contributor[] = contributions.contributors;
-		var total_commits_1yr:NullNum = contributions.total_commits_1yr;
-		var last_pushed_date:string|null = contributions.last_pushed_date;
-		var last_release_date:string|null = contributions.last_release_date;
-		
 		// do null checking for every data point
 		// do an empty check for contributors.length == 0
-		
-
-		// do your calculation
-		// final_score = whatever;
+        if ((contributions == null) || (contributions.total_commits_1yr == null) || (contributions.total_commits_alltime == null)) {
+			logger.log('info', "null check fail in BusFactor" + repo.url);
+            return new Promise((resolve) => {
+                resolve(new GroupMetric(repo.url, "BUS_FACTOR_SCORE", 0));
+            });
+        }
+	   
+	   // Priyanka is fixing to something new that doesn't return negative values
+	   // ratio of commits in the last year compared to all time
+	   var ratio_commits = contributions.total_commits_1yr / contributions.total_commits_alltime;
+	   if (ratio_commits > 1) {
+		   // not possible most likely unless theres an error w/graphql fetches
+		   final_score = 0;
+	   }
+	   else if ((ratio_commits >= 0.1) && (ratio_commits <= 1)){
+		   final_score = (1 - ratio_commits);
+	   }
+	   else if ((ratio_commits >= 0.01) && (ratio_commits <= 0.1)) {
+		   final_score = 1 - (ratio_commits * 10);
+	   }
+	   else if ((ratio_commits >= 0.001) && (ratio_commits <= 0.01)) {
+		   final_score = (1 - (ratio_commits * 100));
+	   }
+	   else {
+		   final_score = 0;
+	   }
         return new Promise((resolve) => {
 			resolve(new GroupMetric(repo.url, "BUS_FACTOR_SCORE", final_score));
 		});
@@ -123,6 +252,7 @@ class LintResults {
 	}
 }
 
+// Modified from https://coderrocketfuel.com/article/recursively-list-all-the-files-in-a-directory-using-node-js
 const getAllFiles = function(dirPath:string, arrayOfFiles:string[]) {
 	const files = fs.readdirSync(dirPath)
 	var arrayOfFiles = arrayOfFiles || []
@@ -131,7 +261,9 @@ const getAllFiles = function(dirPath:string, arrayOfFiles:string[]) {
 		if (fs.statSync(dirPath + "/" + file).isDirectory()) {
 			arrayOfFiles = getAllFiles(dirPath + "/" + file, arrayOfFiles)
 		} else {
-			arrayOfFiles.push(path.join(__dirname, dirPath, "/", file));
+			if (file.endsWith(".js") || file.endsWith(".ts")) {
+				arrayOfFiles.push(path.join(dirPath, "/", file));
+			}
 		}
 	})
 	
@@ -141,15 +273,33 @@ const getAllFiles = function(dirPath:string, arrayOfFiles:string[]) {
 
 export class CorrectnessMetric extends Metric {
 	
-	private async get_eslint_on_clone(dir:string):Promise<LintResults> {
+	private async get_eslint_on_clone(dir:string[]):Promise<LintResults|null> {
 		var error_count:NullNum = null;
 		var fixable_error_count:NullNum = null;
 		var fatal_error_count:NullNum = null;
 		var file_count:NullNum = null;
 		var line_count:NullNum = null;
 		const eslint = new ESLint({
-			overrideConfigFile: "./.eslintrc.cjs",
-			errorOnUnmatchedPattern: true,
+			useEslintrc: false,
+			overrideConfig: {
+				root: true,
+				parser: "@typescript-eslint/parser",
+				"plugins": [
+					'@typescript-eslint',
+				],
+				extends: [
+				"eslint:recommended",
+				"plugin:@typescript-eslint/recommended",
+				],
+				"rules": {
+					// enable additional rules
+					"no-duplicate-imports": ["error", { "includeExports": true } ],
+					// disable rules from base configurations
+					"no-irregular-whitespace": "off",
+					"no-mixed-spaces-and-tabs": "off",
+					"indent": "off",
+				},
+			},
 			extensions: [".js", ".ts"]
 		});
 		//const results = await eslint.lintFiles(["src/**/*.ts"]);
@@ -162,26 +312,19 @@ export class CorrectnessMetric extends Metric {
 			var fatal_error_count_success:number = 0;
 			var line_count_success:NullNum = 0;
 			for (const result of results) {
-				console.log("result " + result.filePath);
-				console.log(result);
 				if (result.source != undefined) {
-					console.log("LINES");
-					console.log(result.source.split("\n").length - 1);
 					line_count_success += result.source.split("\n").length - 1;
 				}
 				else {
-					console.log ("SOURCE UNDEFINED");
+					logger.log ('debug', 'In ESLint parsing: SOURCE UNDEFINED');
 				}
 				file_count_success++;
 				error_count_success += result.errorCount;
 				fixable_error_count_success += result.fixableErrorCount;
 				fatal_error_count_success += result.fatalErrorCount;
-				console.log(result.errorCount);
-				console.log(result.fixableErrorCount);
-				console.log(result.fatalErrorCount)
 			}
 			if (line_count_success == 0) {
-				console.log("Could not find any source files to count lines eslint");
+				logger.log('debug', "Could not find any source files to count lines eslint ");
 				line_count_success = null;
 			}
 			return new Promise((resolve) => {
@@ -189,9 +332,9 @@ export class CorrectnessMetric extends Metric {
 				error_count_success, fixable_error_count_success, fatal_error_count_success))
 			});
 		} catch (error) {
-			console.log("error fetching eslint! " + error);
+			logger.log('debug', "error fetching eslint! " + error);
 			return new Promise((resolve) => {
-				resolve(new LintResults(file_count, line_count, error_count, fixable_error_count, fatal_error_count))
+				resolve(null)
 			});
 		}
 	}
@@ -200,18 +343,40 @@ export class CorrectnessMetric extends Metric {
 		// returns a string filepath to the clone location (directory)
 		// or null if it failed
 		var cloned_dir:string|null = await repo.get_local_clone("Correctness");
-		var final_score:NullNum = null;
+		var final_score:NullNum = 0.25;
 		if (cloned_dir != null) {
 			// do clone work here
-			// const array_of_files = getAllFiles(cloned_dir,[]);
-			// const array_of_files = getAllFiles('./local_clones/cloudinary_npmCorrectness',[]);
-			logger.log('info', "Get Correctness Metric");
-			// console.log(array_of_files);
-//			var lint_results:LintResults = await this.get_eslint_on_clone(cloned_dir);
-//			console.log(lint_results);
+			const array_of_files = getAllFiles(cloned_dir,[]);
+			var lint_results:LintResults|null;
+			try {
+				lint_results = await this.get_eslint_on_clone(array_of_files);
+				if (lint_results == null) {
+					logger.log('debug', "lint results for repo null" + repo.url);
+					return new Promise((resolve) => {
+						resolve(new GroupMetric(repo.url, "CORRECTNESS_SCORE", final_score));
+					});
+				}
+				else if (lint_results.fileCount == null) {
+					logger.log('debug', "lint results for repo null" + repo.url);
+					return new Promise((resolve) => {
+						resolve(new GroupMetric(repo.url, "CORRECTNESS_SCORE", final_score));
+					});
+				}
+			} catch (error) {
+				logger.log('error', "Error calling ESLINT! " + error);
+				return new Promise((resolve) => {
+					resolve(new GroupMetric(repo.url, "CORRECTNESS_SCORE", final_score));
+				});
+			}
+			if ((lint_results.errorCount != null) && (lint_results.lineCount != null)) {
+				final_score = (1 - (lint_results.errorCount / lint_results.lineCount));
+			}
+			else {
+				final_score = 0.5;
+			}
 		}
-
-		// do your calculation
+		// @PRIYANKA todo
+		// fix with .finally process instead of try/catch
 
         return new Promise((resolve) => {
 			resolve(new GroupMetric(repo.url, "CORRECTNESS_SCORE", final_score));
@@ -228,7 +393,7 @@ export class CorrectnessMetric extends Metric {
 export class ResponsiveMetric extends Metric {
     async get_metric(repo: Repository):Promise<GroupMetric> {
         var final_score:NullNum = null;
-
+        /*
         const issue_arr:Issue[] = await repo.get_issues(); // get all issues
 
         var tot_response_time = 0; // time measured in ms
@@ -272,7 +437,7 @@ export class ResponsiveMetric extends Metric {
 
         // get avg response time, then score, round to 2 digits
         final_score = Math.round(this.sigmoid(tot_response_time / num_events) * 100); 
-
+        */
         return new Promise((resolve) => {
 			resolve(new GroupMetric(repo.url, "RESPONSIVE_SCORE", final_score));
 		});

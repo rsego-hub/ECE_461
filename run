@@ -34,4 +34,5 @@ else
 	echo "Running with URL_FILE $1"
 	source scripts/setup.sh
 	node build/src/index.js $1
+	exit $?
 fi

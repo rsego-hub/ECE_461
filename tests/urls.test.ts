@@ -1,6 +1,8 @@
 import { describe, expect, test } from '@jest/globals';
 import { GithubRepository } from '../src/github_repository';
 import { get_real_owner_and_repo, OwnerAndRepo } from '../src/index'
+jest.useFakeTimers()
+
 
 const localLogger = {
   format: {

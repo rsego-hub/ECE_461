@@ -35,61 +35,76 @@ describe('Top level test', () => {
     {
         "url": "https://github.com/cloudinary/cloudinary_npm",
         "metric_name": "LICENSE_SCORE",
-        "metric_val": 0
+        "metric_val": 1
     },
     {
         "url": "https://github.com/cloudinary/cloudinary_npm",
         "metric_name": "RAMP_UP_SCORE",
-        "metric_val": null
+        "metric_val": 0.1
     },
     {
         "url": "https://github.com/cloudinary/cloudinary_npm",
         "metric_name": "BUS_FACTOR_SCORE",
-        "metric_val": null
+        "metric_val": 0.08967391304347827
     },
     {
         "url": "https://github.com/cloudinary/cloudinary_npm",
         "metric_name": "CORRECTNESS_SCORE",
+        "metric_val": 0.8572209375656927
+    },
+    {
+        "url": "https://github.com/cloudinary/cloudinary_npm",
+        "metric_name": "RESPONSIVE_SCORE",
         "metric_val": null
     },
     {
         "url": "https://www.npmjs.com/package/express",
         "metric_name": "LICENSE_SCORE",
-        "metric_val": 0
+        "metric_val": 1
     },
     {
         "url": "https://www.npmjs.com/package/express",
         "metric_name": "RAMP_UP_SCORE",
-        "metric_val": null
+        "metric_val": 0.2
     },
     {
         "url": "https://www.npmjs.com/package/express",
         "metric_name": "BUS_FACTOR_SCORE",
-        "metric_val": null
+        "metric_val": 0.8505906879777623
     },
     {
         "url": "https://www.npmjs.com/package/express",
         "metric_name": "CORRECTNESS_SCORE",
+        "metric_val": 0.8706162162162162
+    },
+    {
+        "url": "https://www.npmjs.com/package/express",
+        "metric_name": "RESPONSIVE_SCORE",
         "metric_val": null
     },
     {
         "url": "https://github.com/nullivex/nodist",
         "metric_name": "LICENSE_SCORE",
-        "metric_val": 0
+        "metric_val": 1
     },
     {
         "url": "https://github.com/nullivex/nodist",
         "metric_name": "RAMP_UP_SCORE",
-        "metric_val": null
+        "metric_val": 0.5
     },
     {
         "url": "https://github.com/nullivex/nodist",
         "metric_name": "BUS_FACTOR_SCORE",
-        "metric_val": null
+        "metric_val": 0.5180722891566265
     },
     {
         "url": "https://github.com/nullivex/nodist",
         "metric_name": "CORRECTNESS_SCORE",
+        "metric_val": 0.89748045178106
+    },
+    {
+        "url": "https://github.com/nullivex/nodist",
+        "metric_name": "RESPONSIVE_SCORE",
         "metric_val": null
     },
     {
@@ -100,36 +115,38 @@ describe('Top level test', () => {
     {
         "url": "https://github.com/lodash/lodash",
         "metric_name": "RAMP_UP_SCORE",
-        "metric_val": null
+        "metric_val": 0.1
     },
     {
         "url": "https://github.com/lodash/lodash",
         "metric_name": "BUS_FACTOR_SCORE",
-        "metric_val": null
+        "metric_val": 0
     },
     {
         "url": "https://github.com/lodash/lodash",
         "metric_name": "CORRECTNESS_SCORE",
+        "metric_val": 0.8785582902688973
+    },
+    {
+        "url": "https://github.com/lodash/lodash",
+        "metric_name": "RESPONSIVE_SCORE",
         "metric_val": null
     },
     {
         "url": "https://www.npmjs.com/package/browserify",
         "metric_name": "LICENSE_SCORE",
-        "metric_val": 0
+        "metric_val": 1
     },
-    {
-        "url": "https://www.npmjs.com/package/browserify",
-        "metric_name": "RAMP_UP_SCORE",
-        "metric_val": null
-    },
+    null,
     {
         "url": "https://www.npmjs.com/package/browserify",
         "metric_name": "BUS_FACTOR_SCORE",
-        "metric_val": null
+        "metric_val": 0
     },
+    null,
     {
         "url": "https://www.npmjs.com/package/browserify",
-        "metric_name": "CORRECTNESS_SCORE",
+        "metric_name": "RESPONSIVE_SCORE",
         "metric_val": null
     }
 ]`);
