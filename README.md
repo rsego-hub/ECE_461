@@ -23,22 +23,23 @@ The “run” executable implements a bash frontend to call these scripts to ach
 **Instructions for use:**
 1. Clone the repository locally.
 2. Set environment variables GITHUB_TOKEN, LOG_FILE, and LOG_LEVEL.
-> GITHUB_TOKEN is a Github access token for using the REST and GraphQL APIs. MUST be set for the tool to work.
-> LOG_LEVEL indicates verbosity of logs - 2 for debug, 1 for info, 0 for silent. If unset, default is 0 for silent.
-> LOG_FILE indicates the absolute filepath for where logs should go. If unset, default is logs/default.log.
+> GITHUB_TOKEN is a Github access token for using the REST and GraphQL APIs. MUST be set for the tool to work.  
+> LOG_LEVEL indicates verbosity of logs - 2 for debug, 1 for info, 0 for silent. If unset, default is 0 for silent.  
+> LOG_FILE indicates the absolute filepath for where logs should go. If unset, default is logs/default.log.  
 3. ./run install
->Calls scripts/initial_setup.sh to clone nvm for setting up node virtual environment.
->Sources scripts/setup.sh to set/check for GITHUB_TOKEN environment variable.
->Installs typescript, node, jest testing framework.
->Installs all package.json dependencies.
+>Calls scripts/initial_setup.sh to clone nvm for setting up node virtual environment.  
+>Sources scripts/setup.sh to set/check for GITHUB_TOKEN environment variable.  
+>Installs typescript, node, jest testing framework.  
+>Installs all package.json dependencies.  
 4. ./run build
-> Builds the project with src/index.ts as the main program. Transpiled .js files and all compiled files go to the build/ directory.
+> Builds the project with src/index.ts as the main program. Transpiled .js files and all compiled files go to the build/ directory.  
 5. ./run sample_url_file.txt
 > the argument of the run executable should be a newline-delimited list of NPM or Github URLs needing evaluation.
-> A sample file is provided named as above.
-> Puts local clones of repositories in directory local_clones/.
-> Puts downloaded files from repositories and REST API calls in directory downloads/
-> Output is NDJSON format. Example output for the sample file is below:
+> A sample file is provided named as above.  
+> Puts local clones of repositories in directory local_clones/   
+> Puts downloaded files from repositories and REST API calls in directory downloads/   
+> Output is NDJSON format. The Responsive Maintainer metric is unimplemented and shows a score of -1, and was not used in the net score calculation.
+> The packages are ranked in decreasing order by NET_SCORE. Example output for the sample file is below:   
 
 ```
 {"URL":"https://github.com/cloudinary/cloudinary_npm","NET_SCORE":0.31696592664357337,"RAMP_UP_SCORE":0.1,"CORRECTNESS_SCORE":0.8572209375656927,"BUS_FACTOR_SCORE":0.313804347826087,"RESPONSIVE_MAINTAINER_SCORE":-1,"LICENSE_SCORE":1}
