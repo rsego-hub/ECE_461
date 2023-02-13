@@ -160,7 +160,7 @@ function handle_results(metrics_array:GroupMetric[]) {
 describe('Top level test', () => {
     test('Process URLS valid', async () => {
 		await process_urls("sample_url_file.txt", handle_results);
-		await pause(45000);
+		await pause(60000);
 		//expect(true).toBe(true);
     });
 })
