@@ -400,7 +400,6 @@ export class ResponsiveMetric extends Metric {
         
         const issue_arr:Issue[] = await repo.get_issues(); // get all issues
 
-        var tot_response_time = 0; // time measured in ms
 		const issueCount = issue_arr.length;
 		const responsiveIssues = issue_arr.filter((issue) => issue.created_at !== issue.updated_at);
 		const responsiveIssueCount = responsiveIssues.length;
