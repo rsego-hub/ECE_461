@@ -350,7 +350,42 @@ export class GithubRepository extends Repository {
 		return new Promise((resolve) => {
 			resolve(rv);
 		});
-	}                                                                                                                          
+	}
+
+	async get_package_json():Promise<string | null> {
+		type ContentResponseType = GetResponseTypeFromEndpointMethod<
+		typeof this.octokit.rest.repos.getContent>;
+		type ContentResponseDataType = GetResponseDataTypeFromEndpointMethod<
+		typeof this.octokit.rest.repos.getContent>; 
+		var cdata:ContentResponseDataType;
+		var rv:string|null = null;
+
+		// uses octokit REST API to fetch license data
+		try {
+			var content:ContentResponseType = await this.octokit.rest.repos.getContent({
+			  owner: this.owner,
+			  repo: this.repo,
+			  path: 'package.json',
+			});
+			cdata = content.data;
+			logger.log('info', "Fetched package file from " + this.owner + "/" + this.repo);
+		} catch (error) {
+			logger.log('debug', "Could not fetch package file from " + this.owner + "/" + this.repo);
+			return new Promise((resolve) => {
+				resolve(rv);
+			});	
+		}
+
+		// this does not work for some reason - debug
+		// this is a workaround since we cannot seem to access object properties of cdata above
+		var jdata = JSON.parse(JSON.stringify(cdata));
+		var decoded:string = Buffer.from(jdata.content, 'base64').toString('ascii')
+		var pkg = JSON.parse(decoded)
+
+		return new Promise((resolve) => {
+			resolve(pkg);
+		});	
+	}
  }                                                                                            
  
  
