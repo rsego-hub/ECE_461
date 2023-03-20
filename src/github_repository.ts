@@ -143,8 +143,6 @@ export class GithubRepository extends Repository {
 			}
 		}
 
-		console.log(response?.data.length)
-
 		// uses octokit REST API to fetch issues list
 		/* const iterator:IteratorResponseType = this.octokit.paginate.iterator(this.octokit.rest.issues.listForRepo, {
 		  owner: this.owner,
@@ -352,13 +350,13 @@ export class GithubRepository extends Repository {
 		});
 	}
 
-	async get_package_json():Promise<string | null> {
+	async get_package_json():Promise<any | null> {
 		type ContentResponseType = GetResponseTypeFromEndpointMethod<
 		typeof this.octokit.rest.repos.getContent>;
 		type ContentResponseDataType = GetResponseDataTypeFromEndpointMethod<
 		typeof this.octokit.rest.repos.getContent>; 
 		var cdata:ContentResponseDataType;
-		var rv:string|null = null;
+		var rv:any|null = null;
 
 		// uses octokit REST API to fetch license data
 		try {

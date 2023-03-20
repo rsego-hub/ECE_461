@@ -46,5 +46,5 @@ export abstract class Repository {
     abstract get_readme():Promise<string | null>;
     abstract get_contributors_stats():Promise<Contributions>;
 
-	abstract get_package_json():Promise<string | null>;
+	abstract get_package_json():Promise<any | null>;
 }
